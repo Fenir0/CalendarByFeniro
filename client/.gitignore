@@ -1,0 +1,4 @@
+build/
+.vscode/
+.qmlls.ini
+tmp/
