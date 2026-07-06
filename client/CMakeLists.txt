@@ -13,14 +13,19 @@ find_package(Qt6 REQUIRED COMPONENTS Quick Gui)
 qt_standard_project_setup()
 
 qt_add_executable(CalendarByFeniro
-  main.cpp src/dayModel.cpp src/dayData.cpp inc/dayModel.h inc/dayData.h
+  main.cpp src/dayData.cpp src/date.cpp inc/dayData.h inc/date.h
+)
+
+target_include_directories(CalendarByFeniro PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
 qt_add_qml_module(CalendarByFeniro
-    URI calendar      
+    URI Calendar      
     VERSION 1.0
-    SOURCES src/dayModel.cpp inc/dayModel.h
-    QML_FILES main.qml DayModel.qml
+    SOURCES src/dayItem.cpp src/appState.cpp inc/dayItem.h inc/appState.h
+    QML_FILES Main.qml DayModel.qml
+    RESOURCES img/editButton.png
 )
  
 target_link_libraries(CalendarByFeniro

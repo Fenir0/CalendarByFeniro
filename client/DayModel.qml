@@ -1,17 +1,17 @@
 import QtQuick
-import calendar.daymodel
+import Calendar
 
 Rectangle{
     id: day_base
-    width: 150
-    height: 150
+    implicitWidth: 150
+    implicitHeight: 150
 
     color: itemColor
     radius: 8
     border.color: "#ccaacc"
 
     property string itemText: ""
-    property color itemColor: "lightblue"
+    property color  itemColor: "blue"
 // SET ELSEWHERE
     property int dayOfWeek:  1
     property int dayOfMonth: 1
@@ -19,7 +19,7 @@ Rectangle{
     property int d_day:   1
     property int d_month: 1
     property int d_year:  1
-    property int y_m_d: 1
+    property int y_m_d:   1
 
     visible: true
     Column{
@@ -39,6 +39,9 @@ Rectangle{
                 default: return "___";
             }
         }
+    }
+    Text{
+        text:itemText 
     }
     }
 }
