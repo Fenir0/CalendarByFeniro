@@ -7,20 +7,19 @@
 
 #include <qqml.h>
 
-
+/*
+VISUAL ELEMENTS OF THE GRID
+INDEPENDENT OF APP DATA
+*/
 
 struct DayItem
 {
-    DayItem(int day, QString color, QString content);
+    DayItem(int day);
     int day;
-    QString color;
-    QString content;
 };
 
 enum DayItemRoles{
     dayRole = Qt::UserRole + 1,
-    colorRole,
-    contentRole
 };
 
 class DayItemModel: public QAbstractTableModel

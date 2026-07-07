@@ -23,25 +23,28 @@ Rectangle{
 
     visible: true
     Column{
-    Text{
-        text: dayOfMonth
-    }
-    Text{
-        text: {
-            switch(dayOfWeek){
-                case 1:return "mon";
-                case 2:return "tue";
-                case 3:return "wed";
-                case 4:return "thu";
-                case 5:return "fri";
-                case 6:return "sat";
-                case 7:return "sun";
-                default: return "___";
+        Rectangle{
+            border.color: "black"
+            width: 25
+            height: 25
+            Text {text: dayOfMonth}
+        }
+        Text{
+            text: {
+                switch(dayOfWeek){
+                    case 1:return "mon";
+                    case 2:return "tue";
+                    case 3:return "wed";
+                    case 4:return "thu";
+                    case 5:return "fri";
+                    case 6:return "sat";
+                    case 7:return "sun";
+                    default: return "___";
+                }
             }
         }
-    }
-    Text{
-        text:itemText 
-    }
+        Text{
+            text:itemText 
+        }
     }
 }

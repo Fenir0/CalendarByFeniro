@@ -11,19 +11,19 @@ using date::YEAR_MONTH_DAY;
 class AppState: public QObject{
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(int weekDayStartOfMonth READ getWeekDayStartOfMonth  CONSTANT)
-    Q_PROPERTY(int dayAmountPrevious READ getDayAmountPrevious   CONSTANT)
-    Q_PROPERTY(int dayAmountCurrent READ getDayAmountCurrent   CONSTANT)
+    Q_PROPERTY(int weekDayStartOfMonth READ getWeekDayStartOfMonth  NOTIFY parameterChanged)
+    Q_PROPERTY(int dayAmountPrevious READ getDayAmountPrevious   NOTIFY parameterChanged)
+    Q_PROPERTY(int dayAmountCurrent READ getDayAmountCurrent   NOTIFY parameterChanged)
 
-    Q_PROPERTY(int visibleMonth READ getVisibleMonth   CONSTANT)
-    Q_PROPERTY(int visibleYear READ getVisibleYear   CONSTANT)
+    Q_PROPERTY(int visibleMonth READ getVisibleMonth WRITE setVisibleMonth NOTIFY parameterChanged)
+    Q_PROPERTY(int visibleYear READ getVisibleYear    NOTIFY parameterChanged)
 
         
-    Q_PROPERTY(int previousMonth READ getPreviousMonth   CONSTANT)
-    Q_PROPERTY(int previousYear READ getPreviousYear   CONSTANT)
+    Q_PROPERTY(int previousMonth READ getPreviousMonth    NOTIFY parameterChanged)
+    Q_PROPERTY(int previousYear READ getPreviousYear    NOTIFY parameterChanged)
 
-    Q_PROPERTY(int nextMonth READ getNextMonth   CONSTANT)
-    Q_PROPERTY(int nextYear  READ getNextYear   CONSTANT)
+    Q_PROPERTY(int nextMonth READ getNextMonth    NOTIFY parameterChanged)
+    Q_PROPERTY(int nextYear  READ getNextYear    NOTIFY parameterChanged)
 
     Q_PROPERTY(int highlightedDay READ getHighlightedDay WRITE setHighlightedDay NOTIFY parameterChanged)
     public:
@@ -43,16 +43,11 @@ class AppState: public QObject{
     void setHighlightedDay(int day);
 
     int  getPreviousMonth()  const;
-    void setPreviousMonth(int month);
-
     int  getPreviousYear()  const;
-    void setPreviousYear(int year);
 
     int  getNextMonth()  const;
-    void setNextMonth(int month);
-
     int  getNextYear()  const;
-    void setNextYear(int year);
+
 
     signals:
     void parameterChanged();

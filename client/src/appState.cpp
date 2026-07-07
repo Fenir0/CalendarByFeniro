@@ -16,6 +16,8 @@ void AppState::setDate(YEAR_MONTH_DAY new_date){
     }
     dayAmountCurrent = date::getDaysInMonth(visibleDate.MONTH, visibleDate.YEAR);
 
+    emit parameterChanged();
+
 }
 
 int AppState::getVisibleMonth() const { return visibleDate.MONTH; }
@@ -33,6 +35,7 @@ void AppState::setVisibleMonth(int month)
     new_date.MONTH = month;
     setDate(new_date);
     setHighlightedDay(highlightedDay);
+    emit parameterChanged();
 }
 
 int  AppState::getWeekDayStartOfMonth() const {return weekDayStartOfMonth;}
@@ -56,17 +59,10 @@ int AppState::getPreviousMonth() const
     else return visibleDate.MONTH - 1;
 }
 
-void AppState::setPreviousMonth(int day)
-{}
-
 int AppState::getPreviousYear() const
 {
     if(visibleDate.MONTH == 1) return visibleDate.YEAR - 1;
     else return visibleDate.YEAR;
-}
-
-void AppState::setPreviousYear(int year)
-{
 }
 
 int AppState::getNextMonth() const
@@ -75,17 +71,9 @@ int AppState::getNextMonth() const
     else return visibleDate.MONTH + 1;
 }
 
-void AppState::setNextMonth(int month)
-{
-
-}
 
 int AppState::getNextYear() const
 {
     if(visibleDate.MONTH == 12) return visibleDate.YEAR + 1;
     else return visibleDate.YEAR;
-}
-
-void AppState::setNextYear(int year)
-{
 }
