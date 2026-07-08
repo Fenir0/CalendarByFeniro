@@ -67,15 +67,14 @@ Window {
                 d_day:   dayOfMonth
 
                 dayOfWeek: model.day
-            //    itemText : get data
                 itemColor:{
                     if(AppState.highlightedDay == y_m_d) return "red"
                     else if(currentMonth) return "lightblue"
                     else return "blue"
                 }
-
-
                 y_m_d: d_year * 1e4 + d_month * 1e2 + d_day
+                
+                itemText : {return DayDataHandler.getContentByYMD(y_m_d);}
             
             MouseArea{
                 anchors.fill: parent

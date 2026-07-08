@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
  
 find_package(Qt6 REQUIRED COMPONENTS Quick Gui)
+find_package(nlohmann_json 3.11.3 REQUIRED)
  
 qt_standard_project_setup()
 
@@ -23,13 +24,14 @@ target_include_directories(CalendarByFeniro PRIVATE
 qt_add_qml_module(CalendarByFeniro
     URI Calendar      
     VERSION 1.0
-    SOURCES src/dayItem.cpp src/appState.cpp inc/dayItem.h inc/appState.h
+    SOURCES src/dayItem.cpp src/appState.cpp src/dayDataHandler.cpp inc/dayItem.h inc/appState.h inc/dayDataHandler.h
     QML_FILES Main.qml DayModel.qml
     RESOURCES img/editButton.png
 )
  
 target_link_libraries(CalendarByFeniro
     PRIVATE Qt6::Quick Qt6::Gui
+    PRIVATE nlohmann_json::nlohmann_json
 )
  
 include(GNUInstallDirs)
