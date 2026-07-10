@@ -15,16 +15,21 @@ using json = nlohmann::json;
 
 class DayDataHandler: public QObject {
     Q_OBJECT
+    QML_SINGLETON
+    Q_PROPERTY(Map_DayData currentDataMap NOTIFY doSmth)
     public:
+    DayDataHandler();
     DayDataHandler(std::string filename);
-    Q_INVOKABLE void        setContentByYMD(u_int32_t y_m_d, std::string content);
-    Q_INVOKABLE std::string getContentByYMD(u_int32_t y_m_d);
+    Q_INVOKABLE void        setContentByYMD(u_int32_t y_m_d, QString content);
+    Q_INVOKABLE QString     getContentByYMD(u_int32_t y_m_d);
 
     void saveCurrentStateIntoFile(std::string filename);
     void loadCurrentStateFromFile(std::string filename);
     private:
     Map_DayData currentDataMap;
 
+    signals:
+    void doSmth();
 };
 
 #endif

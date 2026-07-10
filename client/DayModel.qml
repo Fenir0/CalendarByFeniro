@@ -2,17 +2,25 @@ import QtQuick
 import Calendar
 
 Rectangle{
+    property string itemImageSource: ""
+    Image{
+        source: itemImageSource
+        width: 145
+        height: 145
+        fillMode: Image.PreserveAspectCrop
+    }
+    color: "transparent"
     id: day_base
     implicitWidth: 150
     implicitHeight: 150
 
-    color: itemColor
     radius: 8
-    border.color: "#ccaacc"
+    border.color: "#549ee2"
+    border.width: 5
 
     property string itemText: ""
     property color  itemColor: "blue"
-// SET ELSEWHERE
+
     property int dayOfWeek:  1
     property int dayOfMonth: 1
 
@@ -23,12 +31,8 @@ Rectangle{
 
     visible: true
     Column{
-        Rectangle{
-            border.color: "black"
-            width: 25
-            height: 25
-            Text {text: dayOfMonth}
-        }
+        Text {text: dayOfMonth; color: "#1700ff"}
+
         Text{
             text: {
                 switch(dayOfWeek){

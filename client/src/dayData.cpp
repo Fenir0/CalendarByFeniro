@@ -32,6 +32,10 @@ void Register_DayData::merge(REGISTER_STATE new_state)
 
 //              -----
 
+Map_DayData::Map_DayData()
+{
+}
+
 Map_DayData::Map_DayData(DAY_STATE_MAP state)
 {
     for(auto i: state){

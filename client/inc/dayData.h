@@ -32,6 +32,7 @@ private:
 
 class Map_DayData{
 public:
+    Map_DayData();
     Map_DayData(DAY_STATE_MAP state);
 
     DAY_VALUE_MAP  getValue();

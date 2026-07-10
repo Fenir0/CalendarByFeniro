@@ -27,14 +27,22 @@ void AppState::setVisibleYear(int year)
     YEAR_MONTH_DAY new_date = visibleDate;
     new_date.YEAR = year;
     setDate(new_date);
-    setHighlightedDay(highlightedDay);
 }
 void AppState::setVisibleMonth(int month)
 {
     YEAR_MONTH_DAY new_date = visibleDate;
-    new_date.MONTH = month;
+    if(month > 12){
+        new_date.MONTH = 1;
+        new_date.YEAR += 1;
+    }
+    else if(month < 1){
+        new_date.MONTH = 12;
+        new_date.YEAR -= 1;
+    }
+    else {
+        new_date.MONTH = month;
+    }
     setDate(new_date);
-    setHighlightedDay(highlightedDay);
     emit parameterChanged();
 }
 

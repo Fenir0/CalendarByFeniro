@@ -1,16 +1,30 @@
 #include "../inc/dayDataHandler.h"
 
+
+DayDataHandler::DayDataHandler()
+{
+}
 DayDataHandler::DayDataHandler(std::string filename){
+    try{
+         std::ifstream f(filename);
+         json data = json::parse(f);
+         //for i in data
+         // currentDataMap.set(y_m_d, content);
+    }
+    catch (std::exception e){
+
+    }
 }
 
-Q_INVOKABLE void DayDataHandler::setContentByYMD(u_int32_t y_m_d, std::string content)
+Q_INVOKABLE void DayDataHandler::setContentByYMD(u_int32_t y_m_d, QString content)
 {
-    currentDataMap.set(y_m_d, content);
+    currentDataMap.set(y_m_d, content.toStdString());
+    emit doSmth();
 }
 
-Q_INVOKABLE std::string DayDataHandler::getContentByYMD(u_int32_t y_m_d)
+Q_INVOKABLE QString DayDataHandler::getContentByYMD(u_int32_t y_m_d)
 {
-    return currentDataMap.get(y_m_d);
+    return QString::fromStdString(currentDataMap.get(y_m_d));
 }
 
 void DayDataHandler::saveCurrentStateIntoFile(std::string filename)

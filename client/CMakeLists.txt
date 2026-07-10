@@ -25,8 +25,12 @@ qt_add_qml_module(CalendarByFeniro
     URI Calendar      
     VERSION 1.0
     SOURCES src/dayItem.cpp src/appState.cpp src/dayDataHandler.cpp inc/dayItem.h inc/appState.h inc/dayDataHandler.h
-    QML_FILES Main.qml DayModel.qml
-    RESOURCES img/editButton.png
+    QML_FILES Main.qml DayModel.qml DayEdit.qml 
+    RESOURCES 
+        img/editButton.png 
+        img/monthBackgroundCurrent.png 
+        img/monthBackground.png
+        img/monthBackgroundChosen.png
 )
  
 target_link_libraries(CalendarByFeniro
