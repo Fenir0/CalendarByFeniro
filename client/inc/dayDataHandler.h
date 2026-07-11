@@ -16,8 +16,9 @@ using json = nlohmann::json;
 class DayDataHandler: public QObject {
     Q_OBJECT
     QML_SINGLETON
-    Q_PROPERTY(Map_DayData currentDataMap NOTIFY doSmth)
+    Q_PROPERTY(Map_DayData currentDataMap NOTIFY dataChanged)
     public:
+    static DayDataHandler& instance();
     DayDataHandler();
     DayDataHandler(std::string filename);
     Q_INVOKABLE void        setContentByYMD(u_int32_t y_m_d, QString content);
@@ -29,7 +30,7 @@ class DayDataHandler: public QObject {
     Map_DayData currentDataMap;
 
     signals:
-    void doSmth();
+    void dataChanged(int y_m_d = -1);
 };
 
 #endif

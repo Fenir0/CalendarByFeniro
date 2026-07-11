@@ -1,6 +1,11 @@
 #include "../inc/appState.h"
 #include "appState.h"
 
+AppState& AppState::instance(){
+    static AppState instance;
+    return instance;
+}
+
 void AppState::setDate(YEAR_MONTH_DAY new_date){
     visibleDate = new_date;
     visibleDate.DAY = -123;
@@ -21,7 +26,8 @@ void AppState::setDate(YEAR_MONTH_DAY new_date){
 }
 
 int AppState::getVisibleMonth() const { return visibleDate.MONTH; }
-int AppState::getVisibleYear() const{return visibleDate.YEAR;}
+int AppState::getDateAsYM() const {return visibleDate.YEAR*1e4 + visibleDate.MONTH*1e2;}
+int AppState::getVisibleYear() const { return visibleDate.YEAR; }
 void AppState::setVisibleYear(int year)
 {
     YEAR_MONTH_DAY new_date = visibleDate;
@@ -84,4 +90,9 @@ int AppState::getNextYear() const
 {
     if(visibleDate.MONTH == 12) return visibleDate.YEAR + 1;
     else return visibleDate.YEAR;
+}
+
+int AppState::getDayFromRowColumn(int row, int column) const
+{
+    int index = row*7 + column;
 }

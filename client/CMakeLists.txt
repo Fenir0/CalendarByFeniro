@@ -14,7 +14,9 @@ find_package(nlohmann_json 3.11.3 REQUIRED)
 qt_standard_project_setup()
 
 qt_add_executable(CalendarByFeniro
-  main.cpp src/dayData.cpp src/date.cpp inc/dayData.h inc/date.h
+  main.cpp src/dayData.cpp src/date.cpp src/webSocketClient.cpp 
+        inc/dayData.h inc/date.h 
+        inc/webSocketWorker.h inc/webSocketClient.h
 )
 
 target_include_directories(CalendarByFeniro PRIVATE
@@ -24,8 +26,8 @@ target_include_directories(CalendarByFeniro PRIVATE
 qt_add_qml_module(CalendarByFeniro
     URI Calendar      
     VERSION 1.0
-    SOURCES src/dayItem.cpp src/appState.cpp src/dayDataHandler.cpp inc/dayItem.h inc/appState.h inc/dayDataHandler.h
-    QML_FILES Main.qml DayModel.qml DayEdit.qml 
+    SOURCES src/dayItem.cpp src/appState.cpp src/dayDataHandler.cpp src/webSocketWorker.cpp inc/dayItem.h inc/appState.h inc/dayDataHandler.h inc/webSocketWorker.h
+    QML_FILES Main.qml DayModel.qml DayEdit.qml LoadMenu.qml
     RESOURCES 
         img/editButton.png 
         img/monthBackgroundCurrent.png 

@@ -2,9 +2,7 @@
 
 WebSocketSession::WebSocketSession(tcp::socket socket) : ws_(std::move(socket)){}
 
-WebSocketSession::~WebSocketSession()
-{
-}
+WebSocketSession::~WebSocketSession(){}
 
 void WebSocketSession::run()
 {
@@ -13,6 +11,7 @@ void WebSocketSession::run()
 
 void WebSocketSession::onAccept(beast::error_code ec)
 {
+    // websocket handshake
     std::cerr << "Accept: " << ec.message() << " for " << peer_ << std::endl;
     if(!ec){
         doReadLoop();
@@ -41,9 +40,10 @@ void WebSocketSession::onRead(beast::error_code ec, size_t n)
              json msg = json::parse(it, it + n);
              buffer_.consume(n);
 
-             if (msg.contains("echo"))
+             if (msg.contains("$getfile$"))
+                // read json file
                  response_ = json{{"type", "response"}, {"original", std::move(msg)}}.dump();
-
+            
              if (response_.empty()) {
                  doReadLoop();
              } else {
@@ -72,17 +72,22 @@ WebSocketServer::WebSocketServer(asio::io_context &ioc, tcp::endpoint endpoint):
     doAccept();
 }
 
+// async wait for someone to connect
 void WebSocketServer::doAccept()
 {
     acceptor_.async_accept(beast::bind_front_handler(&WebSocketServer::onAccept, this));
 }
 
+// tcp handshake
 void WebSocketServer::onAccept(beast::error_code ec, tcp::socket socket)
 {
     if(ec){
         std::cerr << "Accept error: " << ec.message() << std::endl;
     }
     else{
+        // handler for the new connection
         std::make_shared<WebSocketSession>(std::move(socket))->run();
     }
+    // listen for the next connection
+    doAccept();
 }

@@ -26,7 +26,26 @@ Window {
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
-        onClicked:monthSelection.visible = !monthSelection.visible
+        onClicked: {monthSelection.visible = !monthSelection.visible}
+    } 
+    RoundButton{
+        text: "L"
+        radius: 30
+        onClicked:{
+            var component = Qt.createComponent("LoadMenu.qml")
+
+            if (component.status === Component.Ready) {
+                var window = component.createObject(null, {})
+                if (window) {
+                    window.show()
+                } else {
+                    console.error("Error")
+                }
+                
+            } else if (component.status === Component.Error) {
+                console.error("Error loading DayModel.qml:", component.errorString())
+            }
+        }
     }
 
     Column{
@@ -86,7 +105,7 @@ Window {
                     }
                 }
                 
-                itemText : {return DayDataHandler.getContentByYMD(y_m_d);}
+                itemText: DayDataHandler.getContentByYMD(y_m_d)
             
                 MouseArea{
                     anchors.fill: parent
@@ -218,7 +237,7 @@ Window {
                         AppState.visibleMonth = index + 1;
                         }
                     }
-                }
+                    }
                 }
                 z: 1
             }

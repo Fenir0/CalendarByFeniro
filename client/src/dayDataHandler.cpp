@@ -1,9 +1,13 @@
 #include "../inc/dayDataHandler.h"
+#include "dayDataHandler.h"
 
-
-DayDataHandler::DayDataHandler()
+DayDataHandler &DayDataHandler::instance()
 {
+    static DayDataHandler instance;
+    return instance;
 }
+
+DayDataHandler::DayDataHandler(){}
 DayDataHandler::DayDataHandler(std::string filename){
     try{
          std::ifstream f(filename);
@@ -19,7 +23,7 @@ DayDataHandler::DayDataHandler(std::string filename){
 Q_INVOKABLE void DayDataHandler::setContentByYMD(u_int32_t y_m_d, QString content)
 {
     currentDataMap.set(y_m_d, content.toStdString());
-    emit doSmth();
+    emit dataChanged(y_m_d);
 }
 
 Q_INVOKABLE QString DayDataHandler::getContentByYMD(u_int32_t y_m_d)
@@ -39,6 +43,7 @@ void DayDataHandler::loadCurrentStateFromFile(std::string filename)
          json data = json::parse(f);
          //for i in data
          // currentDataMap.set(y_m_d, content);
+         emit dataChanged();
     }
     catch (std::exception e){
 

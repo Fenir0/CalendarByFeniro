@@ -27,7 +27,10 @@ class AppState: public QObject{
 
     Q_PROPERTY(int highlightedDay READ getHighlightedDay WRITE setHighlightedDay NOTIFY parameterChanged)
     public:
+    static AppState& instance();
+
     void setDate(YEAR_MONTH_DAY new_date);
+    int getDateAsYM() const;
 
     int  getVisibleYear()const;
     void setVisibleYear(int year);
@@ -48,7 +51,7 @@ class AppState: public QObject{
     int  getNextMonth()  const;
     int  getNextYear()  const;
 
-
+    int getDayFromRowColumn(int row, int column) const;
     signals:
     void parameterChanged();
 
