@@ -1,6 +1,7 @@
 #include "../inc/appState.h"
 #include "appState.h"
 
+
 AppState& AppState::instance(){
     static AppState instance;
     return instance;
@@ -21,7 +22,6 @@ void AppState::setDate(YEAR_MONTH_DAY new_date){
     }
     dayAmountCurrent = date::getDaysInMonth(visibleDate.MONTH, visibleDate.YEAR);
 
-    emit parameterChanged();
 
 }
 
@@ -33,6 +33,7 @@ void AppState::setVisibleYear(int year)
     YEAR_MONTH_DAY new_date = visibleDate;
     new_date.YEAR = year;
     setDate(new_date);
+    emit parameterChanged();
 }
 void AppState::setVisibleMonth(int month)
 {
@@ -55,9 +56,7 @@ void AppState::setVisibleMonth(int month)
 int  AppState::getWeekDayStartOfMonth() const {return weekDayStartOfMonth;}
 int  AppState::getDayAmountCurrent()const{return dayAmountCurrent;}
 int  AppState::getDayAmountPrevious()const{return dayAmountPrevious;}
-int AppState::getHighlightedDay()const{
-    return highlightedDay;
-}
+int AppState::getHighlightedDay()const{return highlightedDay;}
 
 void AppState::setHighlightedDay(int y_m_d){
     int day = y_m_d % 100;
@@ -92,7 +91,31 @@ int AppState::getNextYear() const
     else return visibleDate.YEAR;
 }
 
-int AppState::getDayFromRowColumn(int row, int column) const
-{
-    int index = row*7 + column;
-}
+bool AppState::isSaved() const
+{return saved;}
+
+void AppState::setSaved(bool newSaved)
+{saved = newSaved;}
+bool AppState::isLoggetIn() const{return loggedIn;}
+
+void AppState::setLoggedIn(bool newLoggedIn){loggedIn = newLoggedIn;emit userChanged();}
+
+QString AppState::getUsername() const{return username;}
+
+void AppState::setUsername(QString newUserName){username = newUserName;emit userChanged();}
+
+uint32_t AppState::getUserId() const{return user_id;}
+
+void AppState::setUserId(uint32_t id){user_id = id;emit userChanged();}
+
+QString AppState::getDocumentName() const{return documentName;}
+
+void AppState::setDocumentName(QString newDocumentName){documentName = newDocumentName;emit userChanged();}
+
+uint32_t AppState::getDocumentId() const{return document_id;}
+
+void AppState::setDocumentId(uint32_t id){document_id = id;emit userChanged();}
+
+AccessLevel AppState::getAccessLevel() const{return accessLevel;}
+
+void AppState::setAccessLevel(AccessLevel newAccessLevel){accessLevel = newAccessLevel;}

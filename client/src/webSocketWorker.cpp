@@ -1,9 +1,8 @@
 #include "../inc/webSocketWorker.h"
-
+#include <iostream>
 WebSocketWorker::WebSocketWorker(QObject *parent){
                                                     // local
     m_client = std::make_shared<WebSocketClient>("127.0.0.1", "9002",  [this](const std::string& raw_msg) {
-                // ASIO THREAD
                 QMetaObject::invokeMethod(this, [this, raw_msg]() {
                     m_messages.append(QString::fromStdString(raw_msg));
                     emit messagesUpdated(); 
@@ -11,12 +10,17 @@ WebSocketWorker::WebSocketWorker(QObject *parent){
             },
             
             [this](bool connected) {
-                // ASIO THREAD 
+                m_isConnected = connected;
                 QMetaObject::invokeMethod(this, [this, connected]() {
-                    m_isConnected = connected;
                     emit connectionStateChanged(); 
                 }, Qt::QueuedConnection);
             });
+}
+
+WebSocketWorker &WebSocketWorker::instance()
+{
+    static WebSocketWorker instance;
+    return instance;
 }
 
 WebSocketWorker::~WebSocketWorker()
@@ -35,7 +39,6 @@ QStringList WebSocketWorker::messages() const
 QString WebSocketWorker::connectionStatus() const
 {return m_isConnected? "connected": "Disconnected"; }
 
-#include <iostream>
 Q_INVOKABLE void WebSocketWorker::connectToServer()
 {
     m_connectionStatus = "Connecting";
@@ -48,16 +51,51 @@ Q_INVOKABLE void WebSocketWorker::disconnectFromServer()
     m_client->stop();
 }
 
-Q_INVOKABLE void WebSocketWorker::sendMessage(const QString &message)
+Q_INVOKABLE void WebSocketWorker::sendRequest(const json &message, ResponseCallback callback)
+{
+    uint32_t requestId = 123;
+
+    json msg = message;
+    msg["request_id"] =  requestId;
+    {
+        QMutexLocker lock(&m_mutex);
+        m_pendingRequests[requestId] = callback;
+    }
+    sendMessage(msg.dump());
+}
+
+Q_INVOKABLE void WebSocketWorker::sendMessage(const std::string &message)
+{
+    if (!m_isConnected) return;
+    m_client->send(message);
+}
+
+Q_INVOKABLE void WebSocketWorker::sendMessage(const QString& message)
 {
     if (!m_isConnected) return;
     m_client->send(message.toStdString());
 }
 
-void WebSocketWorker::onRawMessageReceived(const std::string& msg)
+void WebSocketWorker::onRawMessageReceived(const std::string& raw_msg)
 {   
-    m_messages.append(QString::fromStdString(msg));
-    emit messagesUpdated(); 
+    json msg = json::parse(raw_msg);
+    uint32_t requestId = msg["request_id"];
+
+    if(requestId){
+        QMutexLocker lock (&m_mutex);
+        auto it = m_pendingRequests.find(requestId);
+        if(it != m_pendingRequests.end()){
+            ResponseCallback callback = it.value();
+            m_pendingRequests.erase(it);
+
+            QMetaObject::invokeMethod(this, [callback, msg](){
+                callback(msg);
+            }, Qt::QueuedConnection);
+        }
+    }else{
+        m_messages.append(QString::fromStdString(raw_msg));
+        emit messagesUpdated(); 
+    }
 }
 
 

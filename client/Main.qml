@@ -14,9 +14,6 @@ Window {
     title: qsTr("CalendarByFeniro")
     color: "#549ee2"
 
-    property int dayWeekStart:      AppState.weekDayStartOfMonth
-    property int dayAmountPrevious: AppState.dayAmountPrevious
-    property int dayAmountCurrent : AppState.dayAmountCurrent
 
     Button{
         width: 100
@@ -30,8 +27,12 @@ Window {
     } 
     RoundButton{
         text: "L"
-        radius: 30
+        radius: 25
         onClicked:{
+            if (!WebSocket.isConnected) {
+                WebSocket.connectToServer();
+            }
+
             var component = Qt.createComponent("LoadMenu.qml")
 
             if (component.status === Component.Ready) {
@@ -40,12 +41,25 @@ Window {
                     window.show()
                 } else {
                     console.error("Error")
-                }
+                } 
                 
             } else if (component.status === Component.Error) {
                 console.error("Error loading DayModel.qml:", component.errorString())
             }
         }
+    }
+    DayItemModel{
+        id: dayItemModel
+    }
+    Connections {
+        target: AppState
+        function onParameterChanged() {
+            console.log("Reloading: ", AppState.visibleYear, AppState.visibleMonth)
+            dayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
+        }
+    }
+    Component.onCompleted: {
+        dayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
     }
 
     Column{
@@ -60,52 +74,34 @@ Window {
             width: parent.width
             height: 750
 
-            model: DayItemModel{}
+            model: dayItemModel
             columnWidthProvider: function(column) { return 150; }
             rowHeightProvider: function(row) { return 150; }
             delegate: DayModel {
                 required property int row
                 required property int column
+
                 property bool currentMonth
-                property int index: row*7+column
-                dayOfMonth: {
-                    if(index + 1 - dayWeekStart < 0){
-                        // PREVIOUS
-                        return index-dayWeekStart+dayAmountPrevious+2;
-                    }
-                    if((index-dayWeekStart+1)>=dayAmountCurrent){
-                        // NEXT
-                        return  index-dayWeekStart-dayAmountCurrent+2;
-                    }
-                    // CURRENT
-                    return index-dayWeekStart+ 2;
-                }
-                d_day:   dayOfMonth
-                d_month:{
-                    if (index + 1 - dayWeekStart < 0) return AppState.previousMonth;
-                    if ((index - dayWeekStart + 1) >= dayAmountCurrent) return AppState.nextMonth;
-                    return AppState.visibleMonth;
-                }
-                d_year: {
-                    if (index + 1 - dayWeekStart < 0) return AppState.previousYear;
-                    if ((index - dayWeekStart + 1) >= dayAmountCurrent) return AppState.nextYear;
-                    return AppState.visibleYear;
-                }
-                dayOfWeek: model.day 
-                currentMonth: (index + 1 - dayWeekStart >= 0) && ((index - dayWeekStart + 1) < dayAmountCurrent)
-                y_m_d: d_year * 1e4 + d_month * 1e2 + d_day
+
+                dayOfMonth: model.day
+                d_day:      model.day
+                d_month:    model.month
+                d_year:     model.year
+                dayOfWeek:  model.dayOfWeek 
+                currentMonth: model.isCurrent
+                y_m_d: model.year * 1e4 + model.month * 1e2 + model.day
 
                 itemImageSource: {
                     if (y_m_d == AppState.highlightedDay) {
                         return "img/monthBackgroundChosen.png"
-                    } else if (currentMonth) {
+                    } else if (model.isCurrent) {
                         return "img/monthBackgroundCurrent.png"
                     } else {
                         return "img/monthBackground.png"
                     }
                 }
                 
-                itemText: DayDataHandler.getContentByYMD(y_m_d)
+                itemText: model.content
             
                 MouseArea{
                     anchors.fill: parent

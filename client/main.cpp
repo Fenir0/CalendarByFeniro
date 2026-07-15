@@ -10,6 +10,7 @@
 #include "inc/appState.h"
 #include "inc/dayItem.h"
 #include "inc/dayDataHandler.h"
+#include "inc/requestHandler.h"
 
 #include "date.h"
 using date::YEAR_MONTH_DAY;
@@ -20,18 +21,20 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    WebSocketWorker webSocketWorker;
+    WebSocketWorker* webSocketWorker = &WebSocketWorker::instance();
+    RequestHandler requestHandler;
 
-    AppState currentState;
-    DayDataHandler dayDataHandler;
+    AppState* currentState = &AppState::instance();
+    DayDataHandler* dayDataHandler = &DayDataHandler::instance();
     QQmlApplicationEngine engine;
-    currentState.setDate(date::getCurrentDayAsYMD());
+    (*currentState).setDate(date::getCurrentDayAsYMD());
 
-    qmlRegisterSingletonInstance("Calendar", 1, 0, "AppState", &currentState);
-    qmlRegisterSingletonInstance("Calendar", 1, 0, "DayDataHandler", &dayDataHandler);
+    qmlRegisterSingletonInstance("Calendar", 1, 0, "AppState", currentState);
+    qmlRegisterSingletonInstance("Calendar", 1, 0, "DayDataHandler", dayDataHandler);
+    qmlRegisterSingletonInstance("Calendar", 1, 0, "WebSocket", webSocketWorker);
     qmlRegisterType<DayItemModel>("Calendar", 1, 0, "DayItemModel");
 
-    engine.rootContext()->setContextProperty("WebSocket", &webSocketWorker);
+    engine.rootContext()->setContextProperty("RequestHandler", &requestHandler);
     
 
     engine.loadFromModule("Calendar", "Main");

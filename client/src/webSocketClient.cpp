@@ -1,5 +1,8 @@
 #include "../inc/webSocketClient.h"
-#include "webSocketClient.h"
+#include "../inc/webSocketWorker.h"
+#include "../inc/appState.h"
+
+
 #include <iostream>
 
 WebSocketClient::WebSocketClient(std::string host, std::string port, MessageCallback on_msg, StatusCallback on_status)
@@ -41,11 +44,12 @@ void WebSocketClient::async_connect_and_handshake(){
     });
 }
 
-void WebSocketClient::connectionStatus(bool status){}
+void WebSocketClient::connectionStatus(bool status){on_status_(true);}
+
 
 void WebSocketClient::send(json &&message){
     asio::post(ws_.get_executor(), [this, m = std::move(message)]() mutable { //
-        outbox_.push_back(std::move(m).dump());
+        outbox_.push_back(std::move(m));
         if (outbox_.size() == 1)
             doWriteLoop(); 
     });
@@ -60,10 +64,16 @@ void WebSocketClient::doReadLoop(){
     ws_.async_read(incoming_, [this](beast::error_code ec, size_t n){
         std::cout << "Received " << n << " bytes (" << ec.message() << ")" << std::endl;
         if(ec) return;
+        std::string raw_message = beast::buffers_to_string(incoming_.data());
+        if(json::accept(raw_message)){
+            json received_json = json::parse(raw_message);
+            std::string result = received_json["result"];
+            WebSocketWorker::instance().onRawMessageReceived(raw_message);
+          //  std::string value = received_json["RESPONSE"];
+            //handleTask(result, value);
+        } else{
 
-        auto received_message = beast::buffers_to_string(incoming_.data()).substr(0, n);
-        json received_json = json::parse(received_message);
-        
+        }
         incoming_.consume(n);
         doReadLoop();
     });

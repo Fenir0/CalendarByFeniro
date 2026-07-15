@@ -8,9 +8,26 @@
 #include "date.h"
 using date::YEAR_MONTH_DAY;
 
+enum AccessLevel {
+    READ,
+    EDIT
+};
+
 class AppState: public QObject{
     Q_OBJECT
     QML_ELEMENT
+    
+    Q_PROPERTY(bool    loggedIn     READ isLoggetIn WRITE setLoggedIn   NOTIFY userChanged)
+    Q_PROPERTY(bool   documentSaved READ isSaved   WRITE setSaved       NOTIFY userChanged)
+
+    Q_PROPERTY(QString username     READ getUsername WRITE setUsername  NOTIFY userChanged)
+    Q_PROPERTY(uint32_t userId       READ getUserId   WRITE setUserId    NOTIFY userChanged)
+    Q_PROPERTY(uint32_t documentId   READ getDocumentId WRITE setDocumentId  NOTIFY userChanged)
+    Q_PROPERTY(QString documentName READ getDocumentName WRITE setDocumentName  NOTIFY userChanged)
+    Q_PROPERTY(AccessLevel         accessLevel  READ getAccessLevel WRITE setAccessLevel  NOTIFY parameterChanged)
+
+    Q_PROPERTY(YEAR_MONTH_DAY currentDate NOTIFY parameterChanged)    
+
     Q_PROPERTY(int weekDayStartOfMonth READ getWeekDayStartOfMonth  NOTIFY parameterChanged)
     Q_PROPERTY(int dayAmountPrevious READ getDayAmountPrevious   NOTIFY parameterChanged)
     Q_PROPERTY(int dayAmountCurrent READ getDayAmountCurrent   NOTIFY parameterChanged)
@@ -51,9 +68,34 @@ class AppState: public QObject{
     int  getNextMonth()  const;
     int  getNextYear()  const;
 
-    int getDayFromRowColumn(int row, int column) const;
+    void updateIfDayIsVisible(uint32_t ymd);
+
+    bool isSaved() const;
+    void setSaved(bool newSaved);
+
+    bool isLoggetIn() const;
+    void setLoggedIn(bool newloggedIn);
+
+    QString getUsername() const;
+    void setUsername(QString newUserName);
+
+    uint32_t getUserId() const;
+    void setUserId(uint32_t id);
+
+    QString getDocumentName() const;
+    void setDocumentName(QString newDocumentName);
+
+
+    uint32_t getDocumentId() const;
+    void setDocumentId(uint32_t id);
+
+    AccessLevel getAccessLevel() const;
+    void setAccessLevel(AccessLevel newAccessLevel);
+
+    void changeUserFileStatus(const std::string& response);
     signals:
     void parameterChanged();
+    void userChanged();
 
     private:
     YEAR_MONTH_DAY visibleDate;
@@ -62,6 +104,17 @@ class AppState: public QObject{
     int dayAmountPrevious;
 
     int highlightedDay = -1;
+
+
+    bool saved = false;
+    bool loggedIn = false;
+    QString username = "";
+    uint32_t user_id = -1;
+
+    QString documentName = "";
+    uint32_t document_id = -1;
+
+    AccessLevel accessLevel = EDIT;
 };
 
 #endif

@@ -6,6 +6,8 @@
 #include <boost/asio/executor_work_guard.hpp>
 #include <nlohmann/json.hpp>
 
+#include <QHash>
+
 #include <functional>
 #include <string>
 #include <deque>
@@ -22,12 +24,14 @@ using json          = nlohmann::json;
 
 class WebSocketClient: public std::enable_shared_from_this<WebSocketClient>{
 public:
+    using ResponseCallback = std::function<void(const json& response)>;
+
     WebSocketClient(std::string host, std::string port, MessageCallback on_msg, StatusCallback on_status);
     ~WebSocketClient();
     void async_connect_and_handshake();
     void connectionStatus(bool statuc);
-    
-    void send(json&& message);
+
+    void send(json&&);
     void stop();
 private:
     asio::io_context ioc_;
@@ -47,6 +51,12 @@ private:
 
     MessageCallback on_message_;
     StatusCallback on_status_;
+
+    uint32_t client_id;
+    uint32_t server_id;
+
+    QHash<QString, ResponseCallback> m_pendingRequests;
+
 };
 
 #endif

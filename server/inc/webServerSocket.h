@@ -1,10 +1,33 @@
 #ifndef WEB_SERVER_SOCKET_H
 #define WEB_SERVER_SOCKET_H
 
- #include <boost/asio.hpp>
- #include <boost/beast.hpp>
- #include <iostream>
- #include <nlohmann/json.hpp>
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+#include <iostream>
+#include <nlohmann/json.hpp>
+
+#include "postgresql.h"
+#include "documentHandler.h"
+
+#include <vector>
+#include <string>
+#include <tuple>
+
+
+enum TASK{
+    LOGIN,  // $LOGIN$USER$PWD
+    SIGNUP, // $SIGNUP$USER$PWD
+    LOGOUT, // $LOGOUT$
+
+    UPDATE, // $UPDATE$DATA
+    SAVE,   // $SAVE$DATA - update + 
+    SHARE,  // $SHARE$USER$AC_LV
+
+    LOAD,   // $LOAD$FILE
+    DELETE  // $DELETE$FILE
+};
+
+
 
 namespace asio      = boost::asio;
 namespace beast     = boost::beast;
@@ -12,21 +35,51 @@ namespace websocket = beast::websocket;
 using tcp           = asio::ip::tcp;
 using json          = nlohmann::json;
 
+#define RESULT_RESPONSE std::tuple<ACTION_RESULT, json>
+
 class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     public:
-    WebSocketSession(tcp::socket socket);
+    WebSocketSession(tcp::socket socket, asio::thread_pool& pool);
     ~WebSocketSession();
     void run();
     private:
+    bool logged = false;
+    std::string current_user;
+    std::string current_file;
+
+    uint32_t current_file_id;
+    uint32_t current_user_id;
+
+    DocumentHandler workspace;
+
     void onAccept(beast::error_code ec);
-    void onRead(beast::error_code ec, size_t n);
+    void onRead    (beast::error_code ec, size_t n);
     void doReadLoop();
-    void onWrite(beast::error_code ec, size_t n);
+    void onWrite   (beast::error_code ec, size_t n);
+
+    void sendResponse(const json& response = "");
 
     websocket::stream<tcp::socket> ws_;
     beast::flat_buffer buffer_;
     std::string response_;
     tcp::endpoint peer_ = ws_.next_layer().remote_endpoint();
+
+    RESULT_RESPONSE handleTask(TASK task, const json& input);
+// logging actions
+    RESULT_RESPONSE handleLOGINrequest(const json& input);
+    RESULT_RESPONSE handleSIGNUPrequest(const json& input);
+    RESULT_RESPONSE handleLOGOUTrequest();
+// current document actions
+    RESULT_RESPONSE handleRENAMErequest(const json& input);
+    RESULT_RESPONSE handleSAVErequest(const json& input);
+    RESULT_RESPONSE handleSHARErequest(const json& input);
+// documents overview action
+    RESULT_RESPONSE handleCREATErequest(const json& input);
+    RESULT_RESPONSE handleLOADrequest(const json& input);
+    RESULT_RESPONSE handleDELETErequest(const json& input);
+
+    asio::thread_pool& thread_pool_;
+    PostgresqlWorker database;
 };
 
 class WebSocketServer{
@@ -38,6 +91,9 @@ class WebSocketServer{
     void onAccept(beast::error_code ec, tcp::socket socket);
 
     tcp::acceptor acceptor_;
+    asio::thread_pool thread_pool_;
 };
 
 #endif
+
+

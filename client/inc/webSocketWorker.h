@@ -7,6 +7,8 @@
 #include <QObject>
 #include <QString>
 #include <QMutex>
+#include <QHash>
+#include<QJsonObject>
 
 #include <nlohmann/json.hpp>
 #include <boost/asio.hpp>
@@ -14,6 +16,7 @@
 
 #include <thread>
 #include <memory>
+#include <atomic>
 
 class WebSocketWorker: public QObject{
     Q_OBJECT
@@ -21,8 +24,9 @@ class WebSocketWorker: public QObject{
     Q_PROPERTY(QStringList messages READ messages NOTIFY messagesUpdated)
     Q_PROPERTY(QString connectionStatus READ connectionStatus NOTIFY connectionStateChanged)
 public:
-    explicit WebSocketWorker(QObject *parent = nullptr);
-    ~WebSocketWorker();
+    using ResponseCallback = std::function<void(const json& response)>;
+
+    static WebSocketWorker& instance();
 
     bool isConnected() const;
     QStringList messages() const;
@@ -30,22 +34,35 @@ public:
 
     Q_INVOKABLE void connectToServer();
     Q_INVOKABLE void disconnectFromServer();
+    Q_INVOKABLE void sendRequest(const json& message, ResponseCallback callback);
+    Q_INVOKABLE void sendMessage(const std::string& message);
     Q_INVOKABLE void sendMessage(const QString& message);
     
+    void onRawMessageReceived(const std::string& msg);
 signals:
     void messagesUpdated();
     void connectionStateChanged();
 
 private slots:
-    void onRawMessageReceived(const std::string& msg);
     void onRawConnectionChanged(bool connected); 
 
 private:
+explicit WebSocketWorker(QObject *parent = nullptr);
     std::shared_ptr<WebSocketClient> m_client;  
 
-    bool m_isConnected;
+    std::atomic<bool> m_isConnected;
     QStringList m_messages;
     QString m_connectionStatus = "disconnected";
+
+    QHash<uint32_t, ResponseCallback> m_pendingRequests;
+    QMutex m_mutex;
+
+    WebSocketWorker(const WebSocketWorker&) = delete;
+    WebSocketWorker& operator=(const WebSocketWorker&) = delete;
+    WebSocketWorker(WebSocketWorker&&) = delete;
+    WebSocketWorker& operator=(WebSocketWorker&&) = delete;
+
+    ~WebSocketWorker() override;
 };
 
 #endif
