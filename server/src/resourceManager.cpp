@@ -1,28 +1,43 @@
 #include "../inc/resourceManager.h"
 
-json ResourceManager::loadAllFromFile(const std::string& filename)
+void ResourceManager::createUserFolder(uint32_t user_id)
+{
+    // temporary
+    std::filesystem::path base_path = "/home/aleksfeniro/2026_SUMMER_PRACTICE/saved";
+
+    std::filesystem::path user_dir = base_path / std::to_string(user_id);
+    std::filesystem::create_directories(user_dir);
+}
+
+json ResourceManager::loadAllFromFile(const std::string& userfolder, const std::string& file) 
 {
     try{
-    std::fstream f(filename);
-    json data = json::parse(f);
+        std::ifstream f("/home/aleksfeniro/2026_SUMMER_PRACTICE/saved/" +userfolder + "/" + file + ".json");
+        json data = json::parse(f);
+        f.close();
+        return data;
     }
     catch(std::exception e){
         std::cerr << "Error while loading file\n";
     }
 }
 
-void ResourceManager::saveAllIntoFile(const std::string& filename, json data)
+void ResourceManager::saveAllIntoFile(const std::string& userfolder, const std::string& file, json data)
 {
     try{
-    std::fstream f(filename);
-    f << data << '\n';
+        std::ofstream f("/home/aleksfeniro/2026_SUMMER_PRACTICE/saved/" +userfolder + "/" + file + ".json", std::ios::trunc);
+        f << data;
+        f.close();
     }
     catch(std::exception e){
         std::cerr << "Error while writing into file\n";
     }
 }
 
-void ResourceManager::removeFile(const std::string& filename)
+void ResourceManager::updateFile(const std::string& userfolder, const std::string& file, json data)
 {
-    int status = remove(filename.c_str());
+}
+void ResourceManager::removeFile(const std::string& userfolder, const std::string& file)
+{
+   //int status = remove(filename.c_str());
 }

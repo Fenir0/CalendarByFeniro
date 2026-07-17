@@ -1,7 +1,7 @@
 #include "../inc/webServerSocket.h"
 #include "../inc/postgresql.h"
+#include "../inc/documentHandler.h"
 #include "../inc/resourceManager.h"
-#include "webServerSocket.h"
 
 std::string getResultAsString(ACTION_RESULT result){
     switch (result)
@@ -10,6 +10,7 @@ std::string getResultAsString(ACTION_RESULT result){
     case FAILURE: return "FAILURE";
 
     case USERNAME_TAKEN:    return "USERNAME TAKEN";
+    case FILENAME_TAKEN:    return "FILENAME TAKEN";
     case WRONG_PASSWORD:    return "WRONG PASSWORD";
     case FORBIDDEN_SYMBOLS: return "FORBIDDEN SYMBOLS";
     
@@ -69,14 +70,19 @@ TASK getTaskByString(std::string task){
     if(task == "LOGIN")  return LOGIN;
     if(task == "SIGNUP") return SIGNUP;
     if(task == "LOGOUT") return LOGOUT;
+
     if(task == "UPDATE") return UPDATE;
+    if(task == "CREATE")   return CREATE;
+
     if(task == "SHARE")  return SHARE;
+    if(task == "LOADLIST")return LOADLIST;
     if(task == "LOAD")   return LOAD;
     if(task == "DELETE") return DELETE;
+    return LOGOUT;
 }
 
-WebSocketSession::WebSocketSession(tcp::socket socket, asio::thread_pool& pool) : 
-            ws_(std::move(socket)), thread_pool_(pool), database(), workspace(){}
+WebSocketSession::WebSocketSession(tcp::socket socket,asio::io_context& ioc, asio::thread_pool& pool) : 
+            ws_(std::move(socket)), thread_pool_(pool), database(), workspace(ioc){}
 
 WebSocketSession::~WebSocketSession(){}
 
@@ -91,7 +97,6 @@ void WebSocketSession::onAccept(beast::error_code ec)
 
 void WebSocketSession::doReadLoop()
 {  ws_.async_read(buffer_, beast::bind_front_handler(&WebSocketSession::onRead, shared_from_this()));  }
-
 
 void WebSocketSession::onRead(beast::error_code ec, size_t n)
 {
@@ -141,6 +146,7 @@ void WebSocketSession::sendResponse(const json &response)
 /*
          HANDLERS
 */
+
 RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json& input)
 {
     switch (task)
@@ -154,8 +160,8 @@ RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json& input)
     case LOGOUT:
         return handleLOGOUTrequest();
 
-    case SAVE:
-        return handleSAVErequest(input);
+    case CREATE:
+        return handleCREATErequest(input);
 
     case SHARE:
         return handleSHARErequest(input);
@@ -163,12 +169,16 @@ RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json& input)
     case LOAD:
         return handleLOADrequest(input);
 
+    case LOADLIST:
+        return handleLOADLISTrequest(input);
+
     case DELETE:
         return handleDELETErequest(input);
                                       
     default:
         break;
     }    
+    return {FAILURE, {}};
 }
 
 RESULT_RESPONSE WebSocketSession::handleLOGINrequest(const json& input)
@@ -180,6 +190,7 @@ RESULT_RESPONSE WebSocketSession::handleLOGINrequest(const json& input)
         logged = true;
         current_user_id = database.getUserId(username);
         current_user = username;
+        userOwnedFiles = database.getVectorOfFilesByUserID(current_user_id);
     }
     json res;
     res["user_id"]  = current_user_id;
@@ -197,6 +208,8 @@ RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
         logged = true;
         current_user_id = database.getUserId(username);        
         current_user = username;
+        userOwnedFiles = database.getVectorOfFilesByUserID(current_user_id);
+        ResourceManager::createUserFolder(current_user_id);
     }
     json res;
     res["user_id"]  = current_user_id;
@@ -209,55 +222,41 @@ RESULT_RESPONSE WebSocketSession::handleLOGOUTrequest()
     logged = false;
     current_user = "";
     current_user_id = -1;
+    userOwnedFiles = {};
+    workspace.stopPeriodicSave();
+    workspace.saveDataOnServer(workspace.getData());
     return {SUCCESS, {}};
 }
 
 RESULT_RESPONSE WebSocketSession::handleUPDATErequest(const json &input)
 {
     json data = input["data"];
-    workspace.saveDataOnServer(data);
+    std::map<uint32_t, std::string> newData = data.get<std::map<uint32_t, std::string>>();
+    for(const auto& [key, value]: newData){
+        newData[key] = value;
+    }
+    json res;
+    res["msg"] = "File changed";
+    return {SUCCESS, res};
 }
 
 RESULT_RESPONSE WebSocketSession::handleRENAMErequest(const json &input)
 {
     std::string filename = input["filename"];
+    uint32_t file_id = input["file_id"];
     ACTION_RESULT result;
-    // renaming existing file
-    if(current_file_id > -1){
-        result = database.checkExistanceAndPermission(current_file_id, current_user_id);
-        if(result == SUCCESS){
-            result = database.renameFile(current_file_id, filename);
-        } 
-    }
+    result = database.checkExistanceAndPermission(current_file_id, current_user_id);
+    if(result == SUCCESS){
+        result = database.renameFile(current_file_id, filename);
+    } 
     // new file entry (ask for a file name on log in)
-    else{
-        result = database.registerFile(current_file_id, current_user_id, filename);
-    }
+
     if(result == SUCCESS){
         current_file = filename;
         if(current_file_id == -1) current_file_id = database.getFileIdByFilename_UserID(filename, current_user_id);
     }
     json res;
     return {result, res};
-}
-
-RESULT_RESPONSE WebSocketSession::handleSAVErequest(const json& input)
-{
-    if(workspace.getFileId() == -1){
-        return handleCREATErequest(input);
-    }
-
-    ACTION_RESULT result = database.checkExistanceAndPermission(current_file_id, current_user_id);
-    if(result == PERMISSION_WRITE){
-        workspace.saveDataOnServer(input["data"]);
-    }
-    else if(result == PERMISSION_READ){
-        return {PERMISSION_DENIED, {"No access to saving"}};
-    }
-    else if(result == FILE_NOT_CHOSEN){
-        return {FILE_NOT_CHOSEN, {"Choose a file first"}};
-    }
-    return RESULT_RESPONSE();
 }
 
 RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
@@ -273,20 +272,63 @@ RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
     else if(result == PERMISSION_READ){
         return {PERMISSION_DENIED, PERMISSION_DENIED};
     }
+    json res;
+    res["msg"] = "Shared successully";
+    return {SUCCESS, res};
 }
 
 RESULT_RESPONSE WebSocketSession::handleCREATErequest(const json &input)
 {
-    ACTION_RESULT result = database.registerFile(input["filename"]);
-    return RESULT_RESPONSE();
+    std::string filename = input["filename"];
+    json data = input["data"];
+    json res;
+
+    if(workspace.getFileId() != 0){
+        
+    }
+    for(auto i: userOwnedFiles){
+        if(i.second == filename) {
+            res["message"] = "You have access to a document with this name";
+            return {FILENAME_TAKEN, res};
+        }
+    }
+    workspace.setFileId(database.registerFile(filename, current_user_id));
+    workspace.saveDataOnCreate(data);
+    workspace.startPeriodicSave();
+    workspace.setCreatorId(current_user_id);
+    userOwnedFiles.push_back({workspace.getFileId(), filename});
+    res["message"] = "File created";
+    return {SUCCESS, res};
 }
 
-RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
-    
+RESULT_RESPONSE WebSocketSession::handleLOADLISTrequest(const json &input)
 {
-    sendResponse();
-    
+    json res, tmp = {}, data;
+    for(auto it: userOwnedFiles){
+        res["id"] = it.first;
+        res["name"] = it.second;
+        tmp += res;
+    }
+    data["data"] = tmp;
+    std::string s = data.dump();
+    return {SUCCESS, data};
+}
+RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
 
+{
+    std::string filename = input["filename"];
+    uint32_t file_id = input["file_id"];
+    uint8_t access_level = input["access_level"];
+
+    ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
+    if(result == SUCCESS){
+        uint32_t creatorId = database.getFileCreatorId(file_id);
+        json res = ResourceManager::loadAllFromFile(std::to_string(creatorId), std::to_string(file_id));
+        workspace.setNewFile(file_id, filename, res);
+        workspace.setCreatorId(creatorId);
+        return {SUCCESS, res};
+    }
+    return {FAILURE, "Failed to load"};
 }
 
 RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
@@ -302,7 +344,7 @@ RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
          - - - - -
  */
 
-WebSocketServer::WebSocketServer(asio::io_context &ioc, tcp::endpoint endpoint): acceptor_(ioc, endpoint), thread_pool_(4)
+WebSocketServer::WebSocketServer(asio::io_context &ioc, tcp::endpoint endpoint): ioc(ioc), acceptor_(ioc, endpoint), thread_pool_(4)
 {
     doAccept();
 }
@@ -321,7 +363,7 @@ void WebSocketServer::onAccept(beast::error_code ec, tcp::socket socket)
     }
     else{
         // handler for the new connection
-        std::make_shared<WebSocketSession>(std::move(socket), thread_pool_)->run();
+        std::make_shared<WebSocketSession>(std::move(socket), ioc, thread_pool_)->run();
     }
     // listen for the next connection
     doAccept();

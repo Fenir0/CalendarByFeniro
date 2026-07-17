@@ -32,6 +32,8 @@ class AppState: public QObject{
     Q_PROPERTY(int dayAmountPrevious READ getDayAmountPrevious   NOTIFY parameterChanged)
     Q_PROPERTY(int dayAmountCurrent READ getDayAmountCurrent   NOTIFY parameterChanged)
 
+    Q_PROPERTY(QString visibleMonthString READ getVisibleMonthString NOTIFY parameterChanged)
+
     Q_PROPERTY(int visibleMonth READ getVisibleMonth WRITE setVisibleMonth NOTIFY parameterChanged)
     Q_PROPERTY(int visibleYear READ getVisibleYear    NOTIFY parameterChanged)
 
@@ -92,12 +94,14 @@ class AppState: public QObject{
     AccessLevel getAccessLevel() const;
     void setAccessLevel(AccessLevel newAccessLevel);
 
-    void changeUserFileStatus(const std::string& response);
-    signals:
+    QString getVisibleMonthString() const;
+
+signals:
     void parameterChanged();
     void userChanged();
 
-    private:
+private:
+
     YEAR_MONTH_DAY visibleDate;
     int weekDayStartOfMonth;
     int dayAmountCurrent;
@@ -109,10 +113,10 @@ class AppState: public QObject{
     bool saved = false;
     bool loggedIn = false;
     QString username = "";
-    uint32_t user_id = -1;
+    uint32_t user_id = 0;
 
     QString documentName = "";
-    uint32_t document_id = -1;
+    uint32_t document_id = 0;
 
     AccessLevel accessLevel = EDIT;
 };

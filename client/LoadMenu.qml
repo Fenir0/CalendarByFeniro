@@ -5,10 +5,14 @@ import QtQuick.Window
 
 import Calendar
 Window{
-    color: "#9db8d1"
+    color: '#e4fbfd'
     id: loadMenuWindow
     width: 400  
     height: 400
+
+    property string editColor: '#a1aaaa'
+    property string buttonColor: '#6deeee'
+    property string buttonUnavailableColor: '#6273e0'
 
     RowLayout{
         id: topButtonsLayout
@@ -16,6 +20,13 @@ Window{
         height:parent.height/7
         anchors.top: parent.top
         Button{
+            background: Rectangle{
+                color: {
+                    if(userSettingsColumn.visible) return buttonColor
+                    else buttonUnavailableColor
+                }
+            }
+
             Layout.preferredWidth: parent.width/4
             Layout.preferredHeight: parent.height
             Layout.alignment: Qt.AlignLeft
@@ -28,9 +39,17 @@ Window{
             onClicked: {
                 userSettingsColumn.visible = true
                 documentSettingsColumn.visible = false
+                documentsOverviewColumn.visible = false
+
             }
         }
         Button{
+            background: Rectangle{
+                color: {
+                    if(documentSettingsColumn.visible) return buttonColor
+                    else buttonUnavailableColor
+                }
+            }
             Layout.preferredWidth:parent.width/3
             Layout.preferredHeight: parent.height
             Layout.alignment: Qt.AlignCenter
@@ -43,11 +62,18 @@ Window{
             onClicked: {
             if(AppState.loggedIn) {
                 userSettingsColumn.visible = false
+                documentsOverviewColumn.visible = false
                 documentSettingsColumn.visible = true
                 }
             }
         }
         Button{
+            background: Rectangle{
+                color: {
+                    if(documentsOverviewColumn.visible) return buttonColor
+                    else buttonUnavailableColor
+                }
+            }
             Layout.preferredWidth:parent.width/3
             Layout.preferredHeight: parent.height
             Layout.alignment: Qt.AlignRight
@@ -57,7 +83,32 @@ Window{
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter 
             }
-            onClicked: {if(AppState.loggedIn) documentsOverviewColumn.visible = !documentsOverviewColumn.visible}}
+            onClicked: {
+                if(AppState.loggedIn) {
+                    userSettingsColumn.visible = false
+                    documentsOverviewColumn.visible = true
+                    documentSettingsColumn.visible = false
+                }
+                documentModel.clear()
+
+                RequestHandler.loadList(function(success, documentQString){
+                    if(success){
+                        var jsArray = JSON.parse(documentQString);
+
+                        for(var i = 0; i < jsArray.length; i++){
+                            documentModel.append({
+                                "documentName": jsArray[i].name
+                                "documentId": jsArray[i].id
+                            })
+                        }
+                        console.log("Loaded")
+                    }  else{
+                        console.log("Failed to fetch")
+                    }         
+
+                })
+            }
+        }
     }
     Rectangle{
         id:spacer
@@ -99,7 +150,7 @@ Window{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
-                color: "gray"
+                color: editColor
                 TextEdit{
                     id:usernameEdit
                     height: parent.height
@@ -129,7 +180,7 @@ Window{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
-                color: "gray"
+                color: editColor
                 TextEdit{
                     id: passwordEdit
                     verticalAlignment: Text.AlignVCenter
@@ -196,6 +247,7 @@ Window{
             
         }
     }
+    // - - - - - - -
     Column{
         id: documentSettingsColumn
         visible: false
@@ -208,8 +260,11 @@ Window{
             id: textDocument
             anchors.horizontalCenter: parent.horizontalCenter
             text:{
-                if(AppState.saved) return "Changes are saved"
-                else return "Changes are NOT saved!"
+                if(AppState.documentName == "") return "No document loaded from server.\npSave this as new, or load from server"
+                else {
+                    if(AppState.saved) return "Changes are saved"
+                    else return "Changes are NOT saved!"
+                }
             }
         }
         RowLayout{
@@ -226,18 +281,14 @@ Window{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
-                color: "gray"
+                color: editColor
                 TextEdit{
                     verticalAlignment: Text.AlignVCenter
                     id:documentNameEdit
                     anchors.fill: parent
                     anchors.horizontalCenter: parent.horizontalCenter
                     selectByMouse: true
-                    text: {
-                        if(AppState.loggedIn) return AppState.documentName
-                        else return ""
-                    }
-                    readOnly: {return (AppState.loggedIn)?  true:false}
+                    text:  AppState.documentName
                 }
             }
         }
@@ -245,20 +296,27 @@ Window{
             width:parent.width * 4/5
             height: parent.height/8
             anchors.horizontalCenter: parent.horizontalCenter
+            enabled: {
+                if(AppState.documentId > -1) return true
+                else return false
+            }
             Button{
                 text: "Save"
                 Layout.alignment: Qt.AlignLeft
                 onClicked:{
-                    RequestHandler.logout(function(success, msg){
+                    RequestHandler.create(documentNameEdit.text, DayDataHandler.getDataMapAsJSON(), function(success, msg){
                         textResult.text(msg)
                         if(success){
-                            console.log("You are logged out")
-                            AppState.loggedIn = false
+                            console.log("Document saved")
+                            // CHANGE VIEW
                         }else{
-                            console.log("Log out failed:", msg)
+                            console.log("Failed to save:", msg)
                         }
                     })
                 }
+            }
+            Button{
+
             }
         }
         RowLayout{
@@ -274,7 +332,7 @@ Window{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
-                color: "gray"
+                color: editColor
                 TextEdit{
                     id:shareWithEdit
                     anchors.fill: parent
@@ -287,15 +345,30 @@ Window{
                 }
             }
         }
-
+    }
+    ListModel{
+        id: documentModel
     }
     Column{
         id: documentsOverviewColumn
         visible: false
+            
         anchors.top:spacer.bottom
         width: parent.width
-        spacing: 10
+        height: parent.height * 6/7 - spacer.height
+        spacing: 20
+        ListView{
+            id: documentListView
+            width: parent.width * 4/5
+            height: parent.height * 4/5
 
+            anchors.horizontalCenter: parent.horizontalCenter
+            model: documentModel
+            delegate: DocumentListModel{
+                documentName: model.documentName
+                documentId: model.documentId
+            }
+        }
     }
 }
 

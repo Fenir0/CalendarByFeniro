@@ -52,6 +52,15 @@ Window{
         anchors.horizontalCenter:parent.horizontalCenter
         onClicked:{
             DayDataHandler.setContentByYMD(editDayOfMonth, editTextContent.getText(0, editTextContent.length))
+            if(AppState.loggedIn){
+                RequestHandler.update(editDayOfMonth, editTextContent.text, 
+                    function(success, msg){
+                        if(success){
+                            console.log(msg)
+                        }
+                        else console.log("Failed to update on server")
+                    })
+            }
             editDayWindow.close();
         }
     }

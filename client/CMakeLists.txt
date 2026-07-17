@@ -27,12 +27,16 @@ qt_add_qml_module(CalendarByFeniro
     VERSION 1.0
     SOURCES src/dayItem.cpp src/appState.cpp src/dayDataHandler.cpp src/webSocketWorker.cpp src/requestHandler.cpp
                     inc/dayItem.h inc/appState.h inc/dayDataHandler.h inc/webSocketWorker.h inc/requestHandler.h
-    QML_FILES Main.qml DayModel.qml DayEdit.qml LoadMenu.qml
+    QML_FILES Main.qml DayModel.qml DayEdit.qml LoadMenu.qml DocumentListModel.qml
     RESOURCES 
+        img/networkButton.png
         img/editButton.png 
         img/monthBackgroundCurrent.png 
         img/monthBackground.png
         img/monthBackgroundChosen.png
+        img/documentTrashButton.png
+        img/documentShareButton.png
+        img/documentLoadButton.png
 )
  
 target_link_libraries(CalendarByFeniro

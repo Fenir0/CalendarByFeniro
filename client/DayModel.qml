@@ -5,8 +5,9 @@ Rectangle{
     property string itemImageSource: ""
     Image{
         source: itemImageSource
-        width: 145
-        height: 145
+        width: 146
+        height: 146
+        anchors.horizontalCenter: parent.horizontalCenter
         fillMode: Image.PreserveAspectCrop
     }
     color: "transparent"
@@ -16,7 +17,7 @@ Rectangle{
 
     radius: 8
     border.color: "#549ee2"
-    border.width: 5
+    border.width: 6
 
     property string itemText: ""
     property color  itemColor: "blue"
@@ -31,6 +32,7 @@ Rectangle{
 
     visible: true
     Column{
+        padding: 10
         Text {text: dayOfMonth; color: "#1700ff"}
 
         Text{

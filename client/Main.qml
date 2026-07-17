@@ -9,26 +9,42 @@ import Calendar
 Window {
     id: root
     width: 1050  
-    height: 830  
+    height: 818  
     visible: true
     title: qsTr("CalendarByFeniro")
     color: "#549ee2"
-
+    MouseArea{
+        anchors.fill: parent
+        onClicked:{
+            monthSelection.visible = false
+        }
+    }
 
     Button{
         width: 100
         height: 30
         id: monthButton
-        text: AppState.visibleMonth
+        text: AppState.visibleMonthString
+        background: Rectangle{
+            color:'#b5eef5'
+        } 
 
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: parent.top
         onClicked: {monthSelection.visible = !monthSelection.visible}
     } 
     RoundButton{
-        text: "L"
         radius: 25
+        id: networkButton
+        background: Rectangle{
+            radius: editButton.radius
+            color: "transparent"
+            border.color: "black"
+        }
+        icon.source: "img/networkButton.png"
+        icon.color: "transparent"
         onClicked:{
+            monthSelection.visible = false
             if (!WebSocket.isConnected) {
                 WebSocket.connectToServer();
             }
@@ -75,7 +91,7 @@ Window {
             height: 750
 
             model: dayItemModel
-            columnWidthProvider: function(column) { return 150; }
+            columnWidthProvider: function(column) { return mainGrid.width/7; }
             rowHeightProvider: function(row) { return 150; }
             delegate: DayModel {
                 required property int row
@@ -105,11 +121,38 @@ Window {
             
                 MouseArea{
                     anchors.fill: parent
+
+                    Timer {
+                        id: clickTimer
+                        interval: 250
+                    }
                     onClicked:{ 
+                        clickTimer.start() 
+                        monthSelection.visible = false
                         AppState.highlightedDay = y_m_d;
+                        }
+                    
+                    onDoubleClicked:{
+                        clickTimer.stop()
+                        var component = Qt.createComponent("DayEdit.qml")
+
+                        if (component.status === Component.Ready) {
+                            var window = component.createObject(null, {
+                                "editDayOfMonth": AppState.highlightedDay,
+                                "editContent": DayDataHandler.getContentByYMD(AppState.highlightedDay)
+                            })
+                            if (window) {
+                                window.show()
+                            } else {
+                                console.error("Error: createObject returned null even though component was Ready.")
+                            }
+                            
+                        } else if (component.status === Component.Error) {
+                            console.error("Error loading DayEdit.qml:", component.errorString())
                         }
                     }
                 }
+            }
         }
         RowLayout{
             width: parent.width
@@ -120,7 +163,7 @@ Window {
                 Layout.preferredWidth: 90
                 //anchors.left: parent.left
                 text: "<"
-                height: 40
+                Layout.preferredHeight: parent.height
                 background: Rectangle{
                     radius: buttonPrevious.radius
                     color: "transparent"
@@ -137,7 +180,6 @@ Window {
                 Layout.preferredWidth: 90
                 //anchors.horizontalCenter: parent.horizontalCenter
 
-                height: 40
                 background: Rectangle{
                     radius: editButton.radius
                     color: "transparent"
@@ -171,7 +213,6 @@ Window {
                 Layout.preferredWidth: 90
                 //anchors.right: parent.right
 
-                height: 40
                 text: ">"
                 background: Rectangle{
                     radius: buttonNext.radius
@@ -199,7 +240,7 @@ Window {
             ListElement{name: "Nov"; monthId: 11}
             ListElement{name: "Dec"; monthId: 11}
         }
-        Rectangle{
+    Rectangle{
             width: 175
             height: 155
             anchors.horizontalCenter: parent.horizontalCenter

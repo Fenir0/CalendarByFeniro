@@ -15,16 +15,17 @@
 
 
 enum TASK{
-    LOGIN,  // $LOGIN$USER$PWD
-    SIGNUP, // $SIGNUP$USER$PWD
-    LOGOUT, // $LOGOUT$
+    LOGIN,  
+    SIGNUP, 
+    LOGOUT, 
 
-    UPDATE, // $UPDATE$DATA
-    SAVE,   // $SAVE$DATA - update + 
-    SHARE,  // $SHARE$USER$AC_LV
+    UPDATE, // continuous
+    CREATE,  
+    SHARE,
 
-    LOAD,   // $LOAD$FILE
-    DELETE  // $DELETE$FILE
+    LOAD,  
+    LOADLIST, 
+    DELETE  
 };
 
 
@@ -39,7 +40,7 @@ using json          = nlohmann::json;
 
 class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     public:
-    WebSocketSession(tcp::socket socket, asio::thread_pool& pool);
+    WebSocketSession(tcp::socket socket, asio::io_context& ioc, asio::thread_pool& pool);
     ~WebSocketSession();
     void run();
     private:
@@ -49,6 +50,8 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
 
     uint32_t current_file_id;
     uint32_t current_user_id;
+
+    std::vector<std::pair<uint32_t, std::string>> userOwnedFiles;
 
     DocumentHandler workspace;
 
@@ -70,11 +73,13 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     RESULT_RESPONSE handleSIGNUPrequest(const json& input);
     RESULT_RESPONSE handleLOGOUTrequest();
 // current document actions
+    RESULT_RESPONSE handleUPDATErequest(const json& input);
     RESULT_RESPONSE handleRENAMErequest(const json& input);
     RESULT_RESPONSE handleSAVErequest(const json& input);
     RESULT_RESPONSE handleSHARErequest(const json& input);
 // documents overview action
     RESULT_RESPONSE handleCREATErequest(const json& input);
+    RESULT_RESPONSE handleLOADLISTrequest(const json& input);
     RESULT_RESPONSE handleLOADrequest(const json& input);
     RESULT_RESPONSE handleDELETErequest(const json& input);
 
@@ -91,6 +96,7 @@ class WebSocketServer{
     void onAccept(beast::error_code ec, tcp::socket socket);
 
     tcp::acceptor acceptor_;
+    asio::io_context& ioc;
     asio::thread_pool thread_pool_;
 };
 

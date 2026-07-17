@@ -26,7 +26,13 @@ class DayDataHandler: public QObject {
 
     void saveCurrentStateIntoFile(const std::string& filename);
     void loadCurrentStateFromFile(const std::string& filename);
+
+    Q_INVOKABLE json getDataMapAsJSON();
+    void updateDataMapFromJSON(const json& data);
+    void setDataMapFromJSON(const json& data);
+
     signals:
+    void newDataSet();
     void dayDataChanged(quint32 y_m_d);
     private:
     std::map<quint32, QString> currentDataMap;

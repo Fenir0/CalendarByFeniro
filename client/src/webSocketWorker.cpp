@@ -1,5 +1,11 @@
 #include "../inc/webSocketWorker.h"
 #include <iostream>
+
+uint32_t generateRequestId(){
+    static std::atomic<uint32_t> counter (1);
+    return counter.fetch_add(1);
+}
+
 WebSocketWorker::WebSocketWorker(QObject *parent){
                                                     // local
     m_client = std::make_shared<WebSocketClient>("127.0.0.1", "9002",  [this](const std::string& raw_msg) {
@@ -53,7 +59,7 @@ Q_INVOKABLE void WebSocketWorker::disconnectFromServer()
 
 Q_INVOKABLE void WebSocketWorker::sendRequest(const json &message, ResponseCallback callback)
 {
-    uint32_t requestId = 123;
+    uint32_t requestId = generateRequestId();
 
     json msg = message;
     msg["request_id"] =  requestId;

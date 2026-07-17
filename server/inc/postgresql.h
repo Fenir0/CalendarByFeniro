@@ -9,6 +9,7 @@ enum ACTION_RESULT{
     FAILURE,
 
     USERNAME_TAKEN,
+    FILENAME_TAKEN,
     WRONG_PASSWORD,
     FORBIDDEN_SYMBOLS,
     
@@ -25,6 +26,7 @@ enum ACTION_RESULT{
 };
 
 enum ACCESS_LEVEL{
+    CREATOR,
     EDIT,
     READ
 };
@@ -37,14 +39,17 @@ class PostgresqlWorker{
     ACTION_RESULT signUserPwd(std::string username, std::string password);
 
     ACTION_RESULT checkExistanceAndPermission(uint32_t file_id,  uint32_t user_id);
+    std::vector<std::pair<uint32_t, std::string>> getVectorOfFilesByUserID(uint32_t user_id);
 
     uint32_t                  getUserId(std::string username);
     uint32_t getFileIdByFilename_UserID(std::string filename, uint32_t user_id);
+    std::vector<uint32_t> getOtherListenersOfFile(u_int32_t file_id);
+    uint32_t getFileCreatorId(uint32_t file_id);
 
     ACTION_RESULT changeAccessLevelForUser(uint32_t file_id, std::string username, int shared_level);
     ACTION_RESULT deleteFile              (uint32_t file_id);
     ACTION_RESULT renameFile              (uint32_t file_id, std::string newName);
-    ACTION_RESULT registerFile            (std::string newName);
+    uint32_t registerFile            (std::string newName, uint32_t user_id);
 
     private:
     pqxx::connection connection;

@@ -12,8 +12,8 @@ set(PQXX /usr/local/include/pqxx)
 find_library(PQXX_LIB pqxx)
 find_library(PQ_LIB pq)
 
-set(HEADERS inc/webServerSocket.h inc/postgresql.h inc/resourceManager.h)
-set(SOURCES src/webServerSocket.cpp main.cpp src/postgresql.cpp src/resourceManager.cpp)
+set(HEADERS inc/webServerSocket.h inc/postgresql.h inc/resourceManager.h inc/documentHandler.h)
+set(SOURCES src/webServerSocket.cpp main.cpp src/postgresql.cpp src/resourceManager.cpp src/documentHandler.cpp)
 
 add_executable(Server ${SOURCES} ${HEADERS})
 
