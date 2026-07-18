@@ -24,11 +24,11 @@ public:
     void saveDataOnFile();
     void saveDataOnServer(const json& data);
 
-    void saveDayData(const json& dayData);
+    void updateDataOnServer(const json& data);
 
-    void setNewFile(uint32_t file_id, std::string filename, json data);
+    void resetFile();
+    void setNewFile(uint32_t file_id, uint32_t creator_id, std::string filename, json data);
     void          setFileId(uint32_t file_id);
-    void addUser(uint32_t user_id, ACCESS_LEVEL accessLevel);
 
     uint32_t    getFileId() const;
     json        getData();
@@ -41,12 +41,12 @@ public:
     bool setSaved(bool newSaved);
 
     asio::steady_timer saveTimer;
-    std::chrono::seconds saveInterval{30};
+    std::chrono::seconds saveInterval{5};
 
     asio::steady_timer editTimer;
     std::chrono::seconds editSaveDelay{5};
 
-    void onEdit();
+    void saveOnEdit();
 
     void startPeriodicSave();
     void  stopPeriodicSave();
@@ -57,8 +57,6 @@ private:
 
     uint32_t file_id = 0;
     std::uint32_t creator_id;
-    std::unordered_set<uint32_t> owners_id;
-    std::unordered_set<uint32_t> readers_id;
     json data;
     bool changesSaved = false;
 };

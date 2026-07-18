@@ -1,6 +1,7 @@
 #include "../inc/dayDataHandler.h"
 #include "../inc/appState.h"
 #include "../inc/requestHandler.h"
+#include "dayDataHandler.h"
 
 DayDataHandler &DayDataHandler::instance()
 {
@@ -35,7 +36,11 @@ Q_INVOKABLE QString DayDataHandler::getContentByYMD(quint32 y_m_d)
     return currentDataMap[y_m_d];
 }
 
-void DayDataHandler::saveCurrentStateIntoFile(const std::string& filename)
+bool DayDataHandler::isDaySaved(quint32 y_m_d)
+{
+    return currentDataMap.find(y_m_d) != currentDataMap.end() && currentDataMap[y_m_d].length() > 0 ;
+}
+void DayDataHandler::saveCurrentStateIntoFile(const std::string &filename)
 {
 
 }
@@ -66,16 +71,18 @@ json DayDataHandler::getDataMapAsJSON()
 
 void DayDataHandler::updateDataMapFromJSON(const json& data)
 {
-    std::map<uint32_t, std::string> newDataMap = data.get<std::map<uint32_t, std::string>>();
+    std::map<std::string, std::string> newDataMap = data.get<std::map<std::string, std::string>>();
     for(const auto& [key, value]: newDataMap){
-        currentDataMap[static_cast<quint32>(key)] = QString::fromStdString(value);
+        currentDataMap[static_cast<quint32>(std::stoul(key))] = QString::fromStdString(value);
     }
+    emit newDataSet();
 }
 
 void DayDataHandler::setDataMapFromJSON(const json& data){
     currentDataMap.clear();
-    std::map<uint32_t, std::string> newDataMap = data.get<std::map<uint32_t, std::string>>();
+    std::map<std::string, std::string> newDataMap = data.get<std::map<std::string, std::string>>();
     for(const auto& [key, value]: newDataMap){
-        currentDataMap[static_cast<quint32>(key)] = QString::fromStdString(value);
+        currentDataMap[static_cast<quint32>(std::stoul(key))] = QString::fromStdString(value);
     }
+    emit newDataSet();
 }

@@ -22,11 +22,13 @@ Window {
 
     Button{
         width: 100
-        height: 30
+        height: 40
         id: monthButton
         text: AppState.visibleMonthString
         background: Rectangle{
             color:'#b5eef5'
+            border.color: "black"
+            radius: 5
         } 
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -34,14 +36,15 @@ Window {
         onClicked: {monthSelection.visible = !monthSelection.visible}
     } 
     RoundButton{
-        radius: 25
+        height:40
+        width: 40
         id: networkButton
         background: Rectangle{
-            radius: editButton.radius
+            radius: networkButton.radius
             color: "transparent"
             border.color: "black"
         }
-        icon.source: "img/networkButton.png"
+        icon.source: "../img/networkButton.png"
         icon.color: "transparent"
         onClicked:{
             monthSelection.visible = false
@@ -74,12 +77,20 @@ Window {
             dayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
         }
     }
+    Connections {
+        target: DayDataHandler
+        function onNewDataSet() {
+            console.log("Reloading: ", AppState.visibleYear, AppState.visibleMonth)
+            dayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
+        }
+    }
     Component.onCompleted: {
         dayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
     }
 
     Column{
         id: mainColumn
+        height: root.height - networkButton.height
         width: parent.width 
         anchors.top: monthButton.bottom
         anchors.bottom: parent.bottom
@@ -109,11 +120,14 @@ Window {
 
                 itemImageSource: {
                     if (y_m_d == AppState.highlightedDay) {
-                        return "img/monthBackgroundChosen.png"
+                        return "../../img/monthBackgroundChosen.png"
                     } else if (model.isCurrent) {
-                        return "img/monthBackgroundCurrent.png"
+                        if(DayDataHandler.isDaySaved(y_m_d)){
+                            return "../../img/monthBackgroundSaved.png"
+                        }
+                        return "../../img/monthBackgroundCurrent.png"
                     } else {
-                        return "img/monthBackground.png"
+                        return "../../img/monthBackground.png"
                     }
                 }
                 
@@ -129,11 +143,13 @@ Window {
                     onClicked:{ 
                         clickTimer.start() 
                         monthSelection.visible = false
-                        AppState.highlightedDay = y_m_d;
+                        if(AppState.highlightedDay == y_m_d) AppState.highlightedDay = -1;
+                        else AppState.highlightedDay = y_m_d;
                         }
                     
                     onDoubleClicked:{
                         clickTimer.stop()
+                        AppState.highlightedDay = y_m_d;
                         var component = Qt.createComponent("DayEdit.qml")
 
                         if (component.status === Component.Ready) {
@@ -156,6 +172,7 @@ Window {
         }
         RowLayout{
             width: parent.width
+            height: parent.height - mainGrid.height - 4
             RoundButton{
                 Layout.fillHeight: true
                 Layout.alignment: Qt.AlignLeft
@@ -183,9 +200,12 @@ Window {
                 background: Rectangle{
                     radius: editButton.radius
                     color: "transparent"
-                    border.color: "black"
+                    border.color: {
+                        if(AppState.highlightedDay == -1) return "black"
+                        else return "red"
+                    }
                 }
-                icon.source: "img/editButton.png"
+                icon.source: "../img/editButton.png"
                 icon.color: "transparent"
                 onClicked: {
                     var component = Qt.createComponent("DayEdit.qml")

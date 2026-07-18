@@ -3,6 +3,12 @@
 #include "../inc/documentHandler.h"
 #include "../inc/resourceManager.h"
 
+uint32_t generateSessionId(){
+    static std::atomic<uint32_t> counter (1);
+    return counter.fetch_add(1);
+}
+
+
 std::string getResultAsString(ACTION_RESULT result){
     switch (result)
     {
@@ -74,25 +80,33 @@ TASK getTaskByString(std::string task){
     if(task == "UPDATE") return UPDATE;
     if(task == "CREATE")   return CREATE;
 
+    if(task == "RENAME")   return RENAME;
+
     if(task == "SHARE")  return SHARE;
     if(task == "LOADLIST")return LOADLIST;
+    if(task == "LOADPEOPLE") return LOADPEOPLE;
     if(task == "LOAD")   return LOAD;
     if(task == "DELETE") return DELETE;
     return LOGOUT;
 }
 
-WebSocketSession::WebSocketSession(tcp::socket socket,asio::io_context& ioc, asio::thread_pool& pool) : 
-            ws_(std::move(socket)), thread_pool_(pool), database(), workspace(ioc){}
+WebSocketSession::WebSocketSession(tcp::socket socket,asio::io_context& ioc, asio::thread_pool& pool, uint32_t session_id) : 
+            ws_(std::move(socket)), socket_(std::move(socket)), thread_pool_(pool), database(), workspace(ioc), session_id(session_id){}
 
-WebSocketSession::~WebSocketSession(){}
+WebSocketSession::~WebSocketSession(){std::cerr << "Destroyed\n";}
 
 void WebSocketSession::run()
 {  ws_.async_accept(beast::bind_front_handler(&WebSocketSession::onAccept, shared_from_this()));  }
 
+uint32_t WebSocketSession::getId(){return session_id;}
+
 void WebSocketSession::onAccept(beast::error_code ec)
-{// websocket handshake 
+{// websocket handshake
     std::cerr << "Accept: " << ec.message() << " for " << peer_ << std::endl;
-    if(!ec){ doReadLoop(); }
+    if(!ec)
+    {
+        doReadLoop();
+    }
 }
 
 void WebSocketSession::doReadLoop()
@@ -102,9 +116,11 @@ void WebSocketSession::onRead(beast::error_code ec, size_t n)
 {
     if (ec) {
         if (ec == websocket::error::closed) {
+            onClose();
             return;
         }
         std::cerr << "Read error: " << ec.message() << std::endl;
+        onClose();
         return;
     }
         try {
@@ -141,13 +157,30 @@ void WebSocketSession::sendResponse(const json &response)
 {
     response_ = response.dump();
     ws_.async_write( asio::buffer(response_),beast::bind_front_handler(&WebSocketSession::onWrite, shared_from_this()));
-} 
+}
+
+void WebSocketSession::kick()
+{
+  //  ws_.async_close(beast::websocket::close_code::normal, )
+}
+
+void WebSocketSession::onClose()
+{
+    SessionWatcher::instance().remove(this->getId());
+
+    beast::error_code ec;
+    ws_.next_layer().close(ec);
+
+    beast::error_code ec_shutdown;
+    socket_.shutdown(tcp::socket::shutdown_both, ec_shutdown);
+    socket_.close(ec_shutdown);
+}
 
 /*
          HANDLERS
 */
 
-RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json& input)
+RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json &input) 
 {
     switch (task)
     {
@@ -163,11 +196,20 @@ RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json& input)
     case CREATE:
         return handleCREATErequest(input);
 
+    case RENAME:
+        return handleRENAMErequest(input);
+
     case SHARE:
         return handleSHARErequest(input);
 
+    case UPDATE:
+        return handleUPDATErequest(input);
+
     case LOAD:
         return handleLOADrequest(input);
+
+    case LOADPEOPLE:
+        return handleLOADPEOPLErequest(input);
 
     case LOADLIST:
         return handleLOADLISTrequest(input);
@@ -220,23 +262,30 @@ RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
 RESULT_RESPONSE WebSocketSession::handleLOGOUTrequest()
 {
     logged = false;
+    current_file = "";
+    current_file_id = 0;
     current_user = "";
-    current_user_id = -1;
+    current_user_id = 0;
     userOwnedFiles = {};
+    
     workspace.stopPeriodicSave();
     workspace.saveDataOnServer(workspace.getData());
+    workspace.resetFile();
+
     return {SUCCESS, {}};
 }
 
 RESULT_RESPONSE WebSocketSession::handleUPDATErequest(const json &input)
 {
-    json data = input["data"];
-    std::map<uint32_t, std::string> newData = data.get<std::map<uint32_t, std::string>>();
+    json data = input["data"], updatedJson;
+    std::map<std::string, std::string> newData = data.get<std::map<std::string, std::string>>();
     for(const auto& [key, value]: newData){
-        newData[key] = value;
+        updatedJson[key] = value;
     }
     json res;
     res["msg"] = "File changed";
+    std::string s = updatedJson.dump();
+    workspace.updateDataOnServer(updatedJson);
     return {SUCCESS, res};
 }
 
@@ -245,31 +294,31 @@ RESULT_RESPONSE WebSocketSession::handleRENAMErequest(const json &input)
     std::string filename = input["filename"];
     uint32_t file_id = input["file_id"];
     ACTION_RESULT result;
-    result = database.checkExistanceAndPermission(current_file_id, current_user_id);
-    if(result == SUCCESS){
-        result = database.renameFile(current_file_id, filename);
-    } 
-    // new file entry (ask for a file name on log in)
+    result = database.renameFile(file_id, current_user_id, filename);
 
+    json res;
     if(result == SUCCESS){
         current_file = filename;
-        if(current_file_id == -1) current_file_id = database.getFileIdByFilename_UserID(filename, current_user_id);
+        res["msg"] = "Renamed successfully";
     }
-    json res;
+    else{
+        res["msg"] = "Something went wrong";
+    }
     return {result, res};
 }
 
 RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
 {
-    std::string filename = input["filename"];
-    int accessLevel      = input["access_level"];
-    std::string username = input["username"];
-    ACTION_RESULT result = database.checkExistanceAndPermission(current_file_id, current_user_id);   
-    if(result == PERMISSION_WRITE){
-        result = database.changeAccessLevelForUser(current_file_id, username, accessLevel);
+    uint32_t file_id        = input["file_id"];
+    std::string accessLevel = input["access_level"];
+    int sharedLevel = (accessLevel == "Editor")?1:2;
+    std::string username    = input["username"];
+    ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
+    if(result == OWNER){
+        result = database.changeAccessLevelForUser(file_id, username, sharedLevel);
         return {result, PERMISSION_DENIED};
     }
-    else if(result == PERMISSION_READ){
+    else {
         return {PERMISSION_DENIED, PERMISSION_DENIED};
     }
     json res;
@@ -298,9 +347,28 @@ RESULT_RESPONSE WebSocketSession::handleCREATErequest(const json &input)
     workspace.setCreatorId(current_user_id);
     userOwnedFiles.push_back({workspace.getFileId(), filename});
     res["message"] = "File created";
+    current_file_id = workspace.getFileId();
+    res["file_id"] = current_file_id;
     return {SUCCESS, res};
 }
 
+RESULT_RESPONSE WebSocketSession::handleLOADPEOPLErequest(const json &input)
+{
+    json res, tmp = {}, data;
+    auto users_accessLevels = database.getAllUsersOfFile(current_file_id);
+
+    for(auto it: users_accessLevels){
+        res["id"] = it.first;
+        res["accessLevel"] = it.second;
+        res["name"] = database.getUsername(it.first);
+        res["isOwner"] = database.checkExistanceAndPermission(input["file_id"], it.first) == OWNER;
+        tmp += res;   
+    }
+
+    data["data"] = tmp;
+    std::string s = data.dump();
+    return {SUCCESS, data};
+}
 RESULT_RESPONSE WebSocketSession::handleLOADLISTrequest(const json &input)
 {
     json res, tmp = {}, data;
@@ -318,14 +386,18 @@ RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
 {
     std::string filename = input["filename"];
     uint32_t file_id = input["file_id"];
-    uint8_t access_level = input["access_level"];
 
     ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
-    if(result == SUCCESS){
+    if(result != FAILURE){
         uint32_t creatorId = database.getFileCreatorId(file_id);
-        json res = ResourceManager::loadAllFromFile(std::to_string(creatorId), std::to_string(file_id));
-        workspace.setNewFile(file_id, filename, res);
-        workspace.setCreatorId(creatorId);
+        json res;
+        res["data"] = ResourceManager::loadAllFromFile(std::to_string(creatorId), std::to_string(file_id));
+        res["file_id"] = file_id;
+        res["filename"] = filename;
+        workspace.setNewFile(file_id, creatorId, filename, res["data"]);
+        current_file = filename;
+        current_file_id = file_id;
+        workspace.startPeriodicSave();
         return {SUCCESS, res};
     }
     return {FAILURE, "Failed to load"};
@@ -334,19 +406,28 @@ RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
 RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
 {
     ACTION_RESULT result = database.checkExistanceAndPermission(current_file_id, current_user_id); 
-    if(result == PERMISSION_WRITE){
-        result = database.deleteFile(current_file_id);
+    if(result != PERMISSION_DENIED){
+        result = database.deleteFile(current_file_id, current_user_id, result);
     }
     return {result, result};
 }
 
-/*
-         - - - - -
- */
+ /*
+          - - - - -
+  */
 
 WebSocketServer::WebSocketServer(asio::io_context &ioc, tcp::endpoint endpoint): ioc(ioc), acceptor_(ioc, endpoint), thread_pool_(4)
 {
     doAccept();
+}
+
+void WebSocketServer::onSessionConnect(std::shared_ptr<WebSocketSession> session)
+{
+    SessionWatcher::instance().add(session);
+}
+void WebSocketServer::onSessionDisconnect(uint32_t session_id)
+{
+    SessionWatcher::instance().remove(session_id);
 }
 
 // async wait for someone to connect
@@ -363,7 +444,10 @@ void WebSocketServer::onAccept(beast::error_code ec, tcp::socket socket)
     }
     else{
         // handler for the new connection
-        std::make_shared<WebSocketSession>(std::move(socket), ioc, thread_pool_)->run();
+        uint32_t session_id = generateSessionId();
+        std::shared_ptr<WebSocketSession> tmp = std::make_shared<WebSocketSession>(std::move(socket), ioc, thread_pool_, session_id);
+        onSessionConnect(tmp);
+        tmp->run();
     }
     // listen for the next connection
     doAccept();

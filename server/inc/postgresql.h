@@ -18,9 +18,11 @@ enum ACTION_RESULT{
 
     FILE_NOT_CHOSEN,
 
+    OWNER,
     PERMISSION_WRITE,
     PERMISSION_READ,
     PERMISSION_DENIED,
+    CANT_CHANGE_OWNER_LEVEL,
 
     DATA_STREAM
 };
@@ -39,16 +41,18 @@ class PostgresqlWorker{
     ACTION_RESULT signUserPwd(std::string username, std::string password);
 
     ACTION_RESULT checkExistanceAndPermission(uint32_t file_id,  uint32_t user_id);
-    std::vector<std::pair<uint32_t, std::string>> getVectorOfFilesByUserID(uint32_t user_id);
 
     uint32_t                  getUserId(std::string username);
-    uint32_t getFileIdByFilename_UserID(std::string filename, uint32_t user_id);
+    std::string               getUsername(uint32_t id);
+
+    std::vector<std::pair<uint32_t, std::string>> getVectorOfFilesByUserID(uint32_t user_id);
     std::vector<uint32_t> getOtherListenersOfFile(u_int32_t file_id);
+    std::vector<std::pair<uint32_t, std::string>> getAllUsersOfFile(uint32_t file_id);
     uint32_t getFileCreatorId(uint32_t file_id);
 
     ACTION_RESULT changeAccessLevelForUser(uint32_t file_id, std::string username, int shared_level);
-    ACTION_RESULT deleteFile              (uint32_t file_id);
-    ACTION_RESULT renameFile              (uint32_t file_id, std::string newName);
+    ACTION_RESULT deleteFile              (uint32_t file_id, uint32_t user_id, ACTION_RESULT permission);
+    ACTION_RESULT renameFile              (uint32_t file_id, uint32_t user_id, std::string newName);
     uint32_t registerFile            (std::string newName, uint32_t user_id);
 
     private:

@@ -2,6 +2,7 @@
 #include "../inc/resourceManager.h"
 #include <system_error>
 
+
 DocumentHandler::DocumentHandler(boost::asio::io_context& ioc)
     : file_id(0), changesSaved(false), saveTimer(ioc), editTimer(ioc)
 {data = json::object();}
@@ -32,29 +33,38 @@ void DocumentHandler::saveDataOnFile()
 void DocumentHandler::saveDataOnServer(const json& data)
 {
     this->data = data;
+    std::string r = data.dump();
 }
 
-void DocumentHandler::saveDayData(const json &dayData)
+void DocumentHandler::updateDataOnServer(const json &data)
 {
-    std::string YMD = dayData["YMD"];
-    std::string content = dayData["content"];
-    data[YMD] = content;
+    std::map<std::string, std::string> newData = data.get<std::map<std::string, std::string>>();
+    
+    for(const auto& [key, value]: newData){
+        this->data[key] = value;
+    }
+
+    changesSaved = false;
 }
 
-void DocumentHandler::setNewFile(uint32_t file_id, std::string filename, json data)
+void DocumentHandler::resetFile()
 {
+    file_id = 0;
+    creator_id = 0;
+    data = {};
+}
+
+void DocumentHandler::setNewFile(uint32_t file_id, uint32_t creator_id, std::string filename, json data) 
+{
+    this->file_id = file_id;
+    this->creator_id = creator_id;
+    if(!data.empty()) this->data = data;
+    else this->data = {};
 }
 
 void DocumentHandler::setFileId(uint32_t file_id) 
 {
     this->file_id = file_id;
-}
-
-void DocumentHandler::addUser(uint32_t user_id, ACCESS_LEVEL accessLevel)
-{
-    if(std::find(owners_id.begin(), owners_id.end(), user_id) != owners_id.end()){
-
-    }
 }
 
 uint32_t DocumentHandler::getFileId() const {return file_id;}
@@ -70,7 +80,7 @@ uint32_t DocumentHandler::getCreatorId(){return creator_id;}
 
 bool DocumentHandler::setSaved(bool newSaved){return changesSaved = newSaved;}
 
-void DocumentHandler::onEdit()
+void DocumentHandler::saveOnEdit()
 {
     changesSaved = false;
 
@@ -95,6 +105,7 @@ void DocumentHandler::stopPeriodicSave()
     editTimer.cancel();
     if(!changesSaved){
         saveDataOnServer(data);
+        saveDataOnFile();
     }
 }
 
@@ -113,7 +124,7 @@ void DocumentHandler::scheduleNextSave()
 void DocumentHandler::performPeriodicSave()
 {
     if(!changesSaved && file_id != 0){
-        //saveDataOnServer();
+        saveDataOnServer(data);
         saveDataOnFile();
         std::cout << "Saved " << file_id << '\n';
     }

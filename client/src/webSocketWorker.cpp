@@ -1,4 +1,5 @@
 #include "../inc/webSocketWorker.h"
+#include "../inc/dayDataHandler.h"
 #include <iostream>
 
 uint32_t generateRequestId(){
@@ -99,7 +100,8 @@ void WebSocketWorker::onRawMessageReceived(const std::string& raw_msg)
             }, Qt::QueuedConnection);
         }
     }else{
-        m_messages.append(QString::fromStdString(raw_msg));
+        json newData = json::parse(raw_msg);
+        DayDataHandler::instance().updateDataMapFromJSON(newData["data"]);
         emit messagesUpdated(); 
     }
 }

@@ -37,12 +37,14 @@ class RequestHandler: public QObject{
     Q_INVOKABLE void signup(const QString& username, const QString& pwd, QJSValue callback);   
     Q_INVOKABLE void logout(QJSValue callback); 
     
+    Q_INVOKABLE void rename(const QString filename, quint32 fileId, QJSValue callback);
     Q_INVOKABLE void update(const quint32 ymd, QString content, QJSValue callback);
     Q_INVOKABLE void create(const QString& filename, const json& data, QJSValue callback);
     Q_INVOKABLE void loadList(QJSValue callback);
-    Q_INVOKABLE void loadFromServer(const QString& documentname, QJSValue callback);
+    Q_INVOKABLE void loadListOfPeople(quint32 file_id, QJSValue callback);
+    Q_INVOKABLE void loadFromServer(quint32 fileId, const QString& documentname, QJSValue callback);
     
-    Q_INVOKABLE void share(const std::string& documentname, const std::string& username, int accesslevel, QJSValue callback);
+    Q_INVOKABLE void share(quint32 file_id, const QString &username, const QString & accesslevel, QJSValue callback);
 
     Q_INVOKABLE void loadDocumentList(QJSValue callback);
     void openDocument();

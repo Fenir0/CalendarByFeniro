@@ -24,6 +24,8 @@ class DayDataHandler: public QObject {
     Q_INVOKABLE void        setContentByYMD(quint32 y_m_d, QString content);
     Q_INVOKABLE QString     getContentByYMD(quint32 y_m_d);
 
+    Q_INVOKABLE bool isDaySaved(quint32 y_m_d);
+
     void saveCurrentStateIntoFile(const std::string& filename);
     void loadCurrentStateFromFile(const std::string& filename);
 

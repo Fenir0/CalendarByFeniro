@@ -65,6 +65,26 @@ Window{
                 documentsOverviewColumn.visible = false
                 documentSettingsColumn.visible = true
                 }
+                userModel.clear()
+                if(AppState.documentId != 0){
+                    RequestHandler.loadListOfPeople(AppState.documentId,  function(success, documentQString){
+                        if(success){
+                            var jsArray = JSON.parse(documentQString);
+                            for(var i = 0; i < jsArray.length; i++){
+                                userModel.append({
+                                    "userName": jsArray[i].name,
+                                    "accessLevel": jsArray[i].accessLevel,
+                                    "isOwner": jsArray[i].isOwner,
+                                    "userId": jsArray[i].id
+                                })
+                            }
+                            console.log("Loaded people")
+                        }  else{
+                            console.log("Failed to fetch")
+                        }         
+
+                    })
+                }
             }
         }
         Button{
@@ -88,25 +108,26 @@ Window{
                     userSettingsColumn.visible = false
                     documentsOverviewColumn.visible = true
                     documentSettingsColumn.visible = false
+                
+                    documentModel.clear()
+
+                    RequestHandler.loadList(function(success, documentQString){
+                        if(success){
+                            var jsArray = JSON.parse(documentQString);
+
+                            for(var i = 0; i < jsArray.length; i++){
+                                documentModel.append({
+                                    "documentName": jsArray[i].name,
+                                    "documentId": jsArray[i].id
+                                })
+                            }
+                            console.log("Loaded")
+                        }  else{
+                            console.log("Failed to fetch")
+                        }         
+
+                    })
                 }
-                documentModel.clear()
-
-                RequestHandler.loadList(function(success, documentQString){
-                    if(success){
-                        var jsArray = JSON.parse(documentQString);
-
-                        for(var i = 0; i < jsArray.length; i++){
-                            documentModel.append({
-                                "documentName": jsArray[i].name
-                                "documentId": jsArray[i].id
-                            })
-                        }
-                        console.log("Loaded")
-                    }  else{
-                        console.log("Failed to fetch")
-                    }         
-
-                })
             }
         }
     }
@@ -248,6 +269,9 @@ Window{
         }
     }
     // - - - - - - -
+    ListModel{
+        id: userModel
+    }
     Column{
         id: documentSettingsColumn
         visible: false
@@ -260,10 +284,9 @@ Window{
             id: textDocument
             anchors.horizontalCenter: parent.horizontalCenter
             text:{
-                if(AppState.documentName == "") return "No document loaded from server.\npSave this as new, or load from server"
+                if(AppState.documentId == 0) return "No document loaded from server.\nSave this as new, or load from server"
                 else {
-                    if(AppState.saved) return "Changes are saved"
-                    else return "Changes are NOT saved!"
+                    return "Changes are saved"
                 }
             }
         }
@@ -296,56 +319,54 @@ Window{
             width:parent.width * 4/5
             height: parent.height/8
             anchors.horizontalCenter: parent.horizontalCenter
-            enabled: {
-                if(AppState.documentId > -1) return true
-                else return false
-            }
             Button{
-                text: "Save"
+                text: {
+                    if (AppState.documentId != 0) return "Rename"
+                    else return "Save"
+                }
                 Layout.alignment: Qt.AlignLeft
                 onClicked:{
-                    RequestHandler.create(documentNameEdit.text, DayDataHandler.getDataMapAsJSON(), function(success, msg){
-                        textResult.text(msg)
-                        if(success){
-                            console.log("Document saved")
-                            // CHANGE VIEW
-                        }else{
-                            console.log("Failed to save:", msg)
-                        }
-                    })
+                    if(AppState.documentId == 0) {
+                        RequestHandler.create(documentNameEdit.text, DayDataHandler.getDataMapAsJSON(), function(success, msg){
+                            textResult.text(msg)
+                            if(success){
+                                console.log("Document saved")
+                            }else{
+                                console.log("Failed to save:", msg)
+                            }
+                        })
+                    }
+                    else{
+                        RequestHandler.rename(documentNameEdit.text, AppState.documentId, function(success, msg){
+                            textResult.text(msg)
+                            if(success){
+                                console.log("Document renamed")
+                            }
+                            else{
+                                console.log("Failed to rename:", msg)
+                            }
+                        })
+                    }
                 }
-            }
-            Button{
-
             }
         }
-        RowLayout{
-            width:parent.width * 4/5
-            height: parent.height/8
+
+        ListView{
+            id: userListView
+            width: parent.width * 4/5
+            height: parent.height * 4/5
+
             anchors.horizontalCenter: parent.horizontalCenter
-            Text{
-                text: "Share with: "
-                Layout.alignment: Qt.AlignLeft
-                verticalAlignment: Text.AlignVCenter
-            }
-            Rectangle{
-                Layout.preferredWidth: parent.width * 2/5
-                Layout.preferredHeight: parent.height
-                Layout.alignment: Qt.AlignRight
-                color: editColor
-                TextEdit{
-                    id:shareWithEdit
-                    anchors.fill: parent
-                    verticalAlignment: Text.AlignVCenter
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    selectByMouse: true
-                    focus:true
-                    text: ""
-                    readOnly: {return (AppState.loggedIn)?  true:false}
-                }
+            model: userModel
+            delegate: UserListModel{
+                    userNameModel: model.userName
+                    userAccessLevelModel: model.accessLevel
+                    isCurrentUserOwner: model.isOwner
+                    userId: model.userId
             }
         }
     }
+    // - - - - - 
     ListModel{
         id: documentModel
     }
@@ -372,13 +393,3 @@ Window{
     }
 }
 
-/*
-
-onClicked:{
-                if (WebSocket.isConnected) {
-                    WebSocket.disconnectFromServer();
-                } else {
-                    WebSocket.connectToServer();
-                }
-            }
-*/

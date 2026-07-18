@@ -19,14 +19,17 @@ json ResourceManager::loadAllFromFile(const std::string& userfolder, const std::
     }
     catch(std::exception e){
         std::cerr << "Error while loading file\n";
+        json data = {};
+        return data;
     }
 }
 
 void ResourceManager::saveAllIntoFile(const std::string& userfolder, const std::string& file, json data)
 {
     try{
-        std::ofstream f("/home/aleksfeniro/2026_SUMMER_PRACTICE/saved/" +userfolder + "/" + file + ".json", std::ios::trunc);
+        std::ofstream f("/home/aleksfeniro/2026_SUMMER_PRACTICE/saved/" +userfolder + "/" + file + ".json");
         f << data;
+        std::string s = data.dump();
         f.close();
     }
     catch(std::exception e){

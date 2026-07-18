@@ -8,6 +8,8 @@
 
 #include "postgresql.h"
 #include "documentHandler.h"
+#include "sessionWatcher.h"
+#include "fileWatcher.h"
 
 #include <vector>
 #include <string>
@@ -23,8 +25,10 @@ enum TASK{
     CREATE,  
     SHARE,
 
+    RENAME,
     LOAD,  
     LOADLIST, 
+    LOADPEOPLE,
     DELETE  
 };
 
@@ -40,10 +44,15 @@ using json          = nlohmann::json;
 
 class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     public:
-    WebSocketSession(tcp::socket socket, asio::io_context& ioc, asio::thread_pool& pool);
+    WebSocketSession(tcp::socket socket, asio::io_context& ioc, asio::thread_pool& pool, uint32_t session_id);
     ~WebSocketSession();
     void run();
+
+    uint32_t getId();
+
+    void sendResponse(const json& response = "");
     private:
+    uint32_t session_id;
     bool logged = false;
     std::string current_user;
     std::string current_file;
@@ -60,12 +69,15 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     void doReadLoop();
     void onWrite   (beast::error_code ec, size_t n);
 
-    void sendResponse(const json& response = "");
+    void kick();
 
     websocket::stream<tcp::socket> ws_;
+    tcp::socket socket_;
     beast::flat_buffer buffer_;
     std::string response_;
     tcp::endpoint peer_ = ws_.next_layer().remote_endpoint();
+
+    void onClose();
 
     RESULT_RESPONSE handleTask(TASK task, const json& input);
 // logging actions
@@ -73,13 +85,13 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     RESULT_RESPONSE handleSIGNUPrequest(const json& input);
     RESULT_RESPONSE handleLOGOUTrequest();
 // current document actions
+    RESULT_RESPONSE handleCREATErequest(const json& input);
     RESULT_RESPONSE handleUPDATErequest(const json& input);
     RESULT_RESPONSE handleRENAMErequest(const json& input);
-    RESULT_RESPONSE handleSAVErequest(const json& input);
-    RESULT_RESPONSE handleSHARErequest(const json& input);
 // documents overview action
-    RESULT_RESPONSE handleCREATErequest(const json& input);
+    RESULT_RESPONSE handleSHARErequest(const json& input);
     RESULT_RESPONSE handleLOADLISTrequest(const json& input);
+    RESULT_RESPONSE handleLOADPEOPLErequest(const json& input);
     RESULT_RESPONSE handleLOADrequest(const json& input);
     RESULT_RESPONSE handleDELETErequest(const json& input);
 
@@ -90,6 +102,10 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
 class WebSocketServer{
     public:
     WebSocketServer(asio::io_context& ioc, tcp::endpoint endppint);
+
+    void onSessionConnect(std::shared_ptr<WebSocketSession> session);
+    void onSessionDisconnect(uint32_t session_id);
+
 
     private:
     void doAccept();
