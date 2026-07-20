@@ -12,7 +12,10 @@ Window {
     height: 818  
     visible: true
     title: qsTr("CalendarByFeniro")
-    color: "#549ee2"
+    color: '#2127d2'
+
+    property var dayEditWindow: null
+    
     MouseArea{
         anchors.fill: parent
         onClicked:{
@@ -35,35 +38,53 @@ Window {
         anchors.top: parent.top
         onClicked: {monthSelection.visible = !monthSelection.visible}
     } 
+
     RoundButton{
         height:40
         width: 40
         id: networkButton
         background: Rectangle{
             radius: networkButton.radius
-            color: "transparent"
+            color: {
+                if(!AppState.loggedIn) return "#e4fbfd"
+                else return '#41f034'
+            }
             border.color: "black"
         }
         icon.source: "../img/networkButton.png"
         icon.color: "transparent"
         onClicked:{
             monthSelection.visible = false
-            if (!WebSocket.isConnected) {
-                WebSocket.connectToServer();
+
+            if (WebSocket.isConnected) {
+                var component = Qt.createComponent("LoadMenu.qml")
+
+                if (component.status === Component.Ready) {
+                    var window = component.createObject(null, {})
+                    if (window) {
+                        window.show()
+                    } else {
+                        console.error("Error")
+                    } 
+                    
+                } else if (component.status === Component.Error) {
+                    console.error("Error loading DayModel.qml:", component.errorString())
+                }
             }
+            else{
+                var component = Qt.createComponent("ServerIpEnter.qml")
 
-            var component = Qt.createComponent("LoadMenu.qml")
-
-            if (component.status === Component.Ready) {
-                var window = component.createObject(null, {})
-                if (window) {
-                    window.show()
-                } else {
-                    console.error("Error")
-                } 
-                
-            } else if (component.status === Component.Error) {
-                console.error("Error loading DayModel.qml:", component.errorString())
+                if (component.status === Component.Ready) {
+                    var window = component.createObject(null, {})
+                    if (window) {
+                        window.show()
+                    } else {
+                        console.error("Error")
+                    } 
+                    
+                } else if (component.status === Component.Error) {
+                    console.error("Error loading ServerIpEnter.qml:", component.errorString())
+                }
             }
         }
     }
@@ -97,6 +118,7 @@ Window {
         property string monthName: AppState.visibleMonth
         z: 0
         TableView{
+            focus: true
             id: mainGrid
             width: parent.width
             height: 750
@@ -140,25 +162,32 @@ Window {
                         id: clickTimer
                         interval: 250
                     }
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
                     onClicked:{ 
                         clickTimer.start() 
                         monthSelection.visible = false
-                        if(AppState.highlightedDay == y_m_d) AppState.highlightedDay = -1;
-                        else AppState.highlightedDay = y_m_d;
+                        
+                        if (mouse.button == Qt.RightButton && AppState.highlightedDay == y_m_d) {
+                            AppState.highlightedDay = -1;
                         }
+                        else if (mouse.button === Qt.LeftButton) {
+                            AppState.highlightedDay = y_m_d;
+                        }
+                    }
                     
                     onDoubleClicked:{
                         clickTimer.stop()
-                        AppState.highlightedDay = y_m_d;
                         var component = Qt.createComponent("DayEdit.qml")
 
                         if (component.status === Component.Ready) {
-                            var window = component.createObject(null, {
+                            console.log(AppState.highlightedDay)
+                            console.log(DayDataHandler.getContentByYMD(AppState.highlightedDay))
+                            dayEditWindow = component.createObject(root, {
                                 "editDayOfMonth": AppState.highlightedDay,
                                 "editContent": DayDataHandler.getContentByYMD(AppState.highlightedDay)
                             })
-                            if (window) {
-                                window.show()
+                            if (dayEditWindow) {
+                                dayEditWindow.show()
                             } else {
                                 console.error("Error: createObject returned null even though component was Ready.")
                             }
@@ -169,21 +198,47 @@ Window {
                     }
                 }
             }
+            // Keys.onUpPressed: {
+            //     if(AppState.highlightedDay == -1) return
+            //     AppState.highlightedDay -= 7
+            // }
+            // Keys.onDownPressed: {
+            //     if(AppState.highlightedDay == -1) return
+            //     AppState.highlightedDay += 7
+            // }
+            // Keys.onLeftPressed: {
+            //     if(AppState.highlightedDay == -1) return
+            //     if(AppState.getWeekDay(AppState.highlightedDay) != 0) AppState.highlightedDay -= 1
+            // }
+            // Keys.onRightPressed:{
+            //     if(AppState.highlightedDay == -1) return
+            //     if(AppState.getWeekDay(AppState.highlightedDay) != 6) AppState.highlightedDay += 1
+            // }
+            Keys.onReturnPressed: {
+                if(AppState.highlightedDay == -1) return
+                editButton.clicked()
+            }
         }
         RowLayout{
-            width: parent.width
+            width: parent.width - 40
             height: parent.height - mainGrid.height - 4
+            anchors.horizontalCenter: parent.horizontalCenter
             RoundButton{
                 Layout.fillHeight: true
                 Layout.alignment: Qt.AlignLeft
                 id: buttonPrevious
                 Layout.preferredWidth: 90
                 //anchors.left: parent.left
-                text: "<"
+                Text{
+                    text: "<"
+                    color:"#2127d2"
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                }
                 Layout.preferredHeight: parent.height
                 background: Rectangle{
                     radius: buttonPrevious.radius
-                    color: "transparent"
+                    color: "#6deeee"
                     border.color: "black"
                 }
                 onClicked:{
@@ -199,11 +254,11 @@ Window {
 
                 background: Rectangle{
                     radius: editButton.radius
-                    color: "transparent"
-                    border.color: {
-                        if(AppState.highlightedDay == -1) return "black"
-                        else return "red"
+                    color:  {
+                        if(AppState.highlightedDay == -1) return "transparent"
+                        else return '#41f034'
                     }
+                    border.color: "black"
                 }
                 icon.source: "../img/editButton.png"
                 icon.color: "transparent"
@@ -233,10 +288,15 @@ Window {
                 Layout.preferredWidth: 90
                 //anchors.right: parent.right
 
-                text: ">"
+                Text{
+                    text: ">"
+                    color:"#2127d2"
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                }
                 background: Rectangle{
                     radius: buttonNext.radius
-                    color: "transparent"
+                    color: "#6deeee"
                     border.color: "black"
                 }
                 onClicked:{

@@ -13,11 +13,11 @@ void SessionWatcher::remove(SESSION_ID session_id)
     sessions_.erase(session_id);
 }
 
-void SessionWatcher::sendTo(const std::set<SESSION_ID> &ids, const json &message)
+void SessionWatcher::sendTo(const std::set<SESSION_ID> &ids, const json &message, SESSION_ID current_session)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for(auto it: ids){
-        if(sessions_.find(it) != sessions_.end()){
+        if(sessions_.find(it) != sessions_.end() && sessions_[it]->getId() != current_session){
             sessions_[it]->sendResponse(message);
         }
     }

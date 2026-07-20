@@ -11,9 +11,8 @@ void AppState::setDate(YEAR_MONTH_DAY new_date){
     visibleDate = new_date;
     visibleDate.DAY = -123;
 
-    weekDayStartOfMonth = date::getWeekDay(visibleDate.YEAR, 
-                                          visibleDate.MONTH, 
-                                                    1);
+    dayAmountCurrent = date::getDaysInMonth(visibleDate.MONTH, visibleDate.YEAR);
+
     if(visibleDate.MONTH == 1) {
         dayAmountPrevious = date::getDaysInMonth(12, visibleDate.YEAR-1);
     }
@@ -21,9 +20,10 @@ void AppState::setDate(YEAR_MONTH_DAY new_date){
         dayAmountPrevious = date::getDaysInMonth(visibleDate.MONTH - 1, visibleDate.YEAR);
     }
     dayAmountCurrent = date::getDaysInMonth(visibleDate.MONTH, visibleDate.YEAR);
-
-
 }
+
+int  AppState::getDayAmountCurrent()const{return dayAmountCurrent;}
+int  AppState::getDayAmountPrevious()const{return dayAmountPrevious;}
 
 int AppState::getVisibleMonth() const { return visibleDate.MONTH; }
 int AppState::getDateAsYM() const {return visibleDate.YEAR*1e4 + visibleDate.MONTH*1e2;}
@@ -53,9 +53,6 @@ void AppState::setVisibleMonth(int month)
     emit parameterChanged();
 }
 
-int  AppState::getWeekDayStartOfMonth() const {return weekDayStartOfMonth;}
-int  AppState::getDayAmountCurrent()const{return dayAmountCurrent;}
-int  AppState::getDayAmountPrevious()const{return dayAmountPrevious;}
 int AppState::getHighlightedDay()const{return highlightedDay;}
 
 void AppState::setHighlightedDay(int y_m_d){
@@ -138,4 +135,13 @@ QString AppState::getVisibleMonthString() const
     case 11: return "Nov";
     case 12: return "Dec";
     }
+    return "IDK";
+}
+
+Q_INVOKABLE uint32_t AppState::getWeekDay(quint32 day) const
+{
+    uint32_t d_year = day / 10000;
+    uint32_t d_month = day / 100 % 100;
+    uint32_t d_day = day % 100;
+    uint32_t dayOfWeek = QDate(d_year, d_month, d_day).dayOfWeek();
 }

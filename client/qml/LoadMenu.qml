@@ -5,12 +5,17 @@ import QtQuick.Window
 
 import Calendar
 Window{
-    color: '#e4fbfd'
+    color: backColor
     id: loadMenuWindow
     width: 400  
     height: 400
 
-    property string editColor: '#a1aaaa'
+
+    property string backColor: '#e4fbfd'
+    property string editColor: '#f0f0f0'
+    property string loginButtonColor: '#ffc174'
+    property string loggedInButtonColor: '#a84343'
+    property string editForbiddenColor: '#a1aaaa'
     property string buttonColor: '#6deeee'
     property string buttonUnavailableColor: '#6273e0'
 
@@ -25,6 +30,7 @@ Window{
                     if(userSettingsColumn.visible) return buttonColor
                     else buttonUnavailableColor
                 }
+                radius: 10
             }
 
             Layout.preferredWidth: parent.width/4
@@ -40,7 +46,6 @@ Window{
                 userSettingsColumn.visible = true
                 documentSettingsColumn.visible = false
                 documentsOverviewColumn.visible = false
-
             }
         }
         Button{
@@ -49,6 +54,7 @@ Window{
                     if(documentSettingsColumn.visible) return buttonColor
                     else buttonUnavailableColor
                 }
+                radius: 10
             }
             Layout.preferredWidth:parent.width/3
             Layout.preferredHeight: parent.height
@@ -93,6 +99,7 @@ Window{
                     if(documentsOverviewColumn.visible) return buttonColor
                     else buttonUnavailableColor
                 }
+                radius: 10
             }
             Layout.preferredWidth:parent.width/3
             Layout.preferredHeight: parent.height
@@ -138,7 +145,9 @@ Window{
         width: parent.width
         height: parent.height/10
     }
-    // - - - - - - -
+// =========================
+// USER
+// =========================
     Column{
         id: userSettingsColumn
         
@@ -172,6 +181,8 @@ Window{
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
                 color: editColor
+                id: usernameEditRectangle
+                border.color: "black"
                 TextEdit{
                     id:usernameEdit
                     height: parent.height
@@ -202,13 +213,18 @@ Window{
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
                 color: editColor
+                id: passwordEditRectangle
+                border.color: "black"
                 TextEdit{
                     id: passwordEdit
                     verticalAlignment: Text.AlignVCenter
                     anchors.fill: parent
                     selectByMouse: true
-                    text: {if (AppState.loggedIn) return  "***"
-                    else return ""}
+                    text: {
+                        if (AppState.loggedIn) return  "***"
+                        else return ""
+                    }
+                    readOnly: {return (AppState.loggedIn)?  true:false}
                 }
             }
         }
@@ -219,11 +235,20 @@ Window{
                 id: loginButton
                 text: "Log in"
                 Layout.alignment: Qt.AlignLeft
+                background: Rectangle{
+                    color:{ 
+                    if(AppState.loggedIn) return loggedInButtonColor
+                    else return loginButtonColor
+                    }
+                    radius: 10
+                }    
                 onClicked:{
                   //  loginInProgress = true
                     RequestHandler.login(usernameEdit.text, passwordEdit.text, function(success, msg){
 
                         if(success){
+                            usernameEditRectangle.color = editForbiddenColor
+                            passwordEditRectangle.color = editForbiddenColor
                             console.log("Log in successful")
                             AppState.loggedIn = true
                         }else{
@@ -235,10 +260,19 @@ Window{
             Button{
                 text: "Sign up"
                 Layout.alignment: Qt.AlignCenter
+                background: Rectangle{
+                    color:{ 
+                    if(AppState.loggedIn) return loggedInButtonColor
+                    else return loginButtonColor
+                    }
+                    radius: 10
+                }     
                 onClicked:{
                     RequestHandler.signup(usernameEdit.text, passwordEdit.text, function(success, msg){
                         textResult.text(msg)
                         if(success){
+                            usernameEditRectangle.color = editForbiddenColor
+                            passwordEditRectangle.color = editForbiddenColor
                             console.log("Sign up successful")
                             AppState.loggedIn = true
                         }else{
@@ -250,10 +284,19 @@ Window{
             Button{
                 text:"Log out"
                 Layout.alignment: Qt.AlignRight
+                background: Rectangle{
+                    color:{ 
+                        if(!AppState.loggedIn) return loggedInButtonColor
+                        else return loginButtonColor
+                    }
+                    radius: 10
+                }                
                 onClicked:{
                     RequestHandler.logout(function(success, msg){
                         textResult.text(msg)
                         if(success){
+                            usernameEditRectangle.color = editColor
+                            passwordEditRectangle.color = editColor
                             console.log("You are logged out")
                             AppState.loggedIn = false
                         }else{
@@ -268,7 +311,9 @@ Window{
             
         }
     }
-    // - - - - - - -
+// =========================
+// CURRENT DOCUMENT
+// =========================
     ListModel{
         id: userModel
     }
@@ -351,10 +396,10 @@ Window{
             }
         }
 
-        ListView{
+        ListView{ 
             id: userListView
             width: parent.width * 4/5
-            height: parent.height * 4/5
+            height: parent.height * 2/5
 
             anchors.horizontalCenter: parent.horizontalCenter
             model: userModel
@@ -363,6 +408,16 @@ Window{
                     userAccessLevelModel: model.accessLevel
                     isCurrentUserOwner: model.isOwner
                     userId: model.userId
+            }
+        }
+        Button{
+            text: "Change access rules"
+            width: parent.width * 3/5
+            height: parent.height * 1/6
+            anchors.horizontalCenter: parent.horizontalCenter
+            background: Rectangle{
+                color: loggedInButtonColor
+                radius: 10
             }
         }
     }

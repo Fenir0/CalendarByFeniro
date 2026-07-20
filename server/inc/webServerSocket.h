@@ -14,6 +14,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
+#include <deque>
 
 
 enum TASK{
@@ -51,7 +52,12 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     uint32_t getId();
 
     void sendResponse(const json& response = "");
-    private:
+
+private:
+    std::deque<std::string> write_queue_;
+    std::mutex write_mutex_;
+    bool is_writing_ = false;
+
     uint32_t session_id;
     bool logged = false;
     std::string current_user;
@@ -67,12 +73,11 @@ class WebSocketSession: public std::enable_shared_from_this<WebSocketSession>{
     void onAccept(beast::error_code ec);
     void onRead    (beast::error_code ec, size_t n);
     void doReadLoop();
-    void onWrite   (beast::error_code ec, size_t n);
+    void onWrite   ();
 
     void kick();
 
     websocket::stream<tcp::socket> ws_;
-    tcp::socket socket_;
     beast::flat_buffer buffer_;
     std::string response_;
     tcp::endpoint peer_ = ws_.next_layer().remote_endpoint();

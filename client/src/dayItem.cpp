@@ -1,4 +1,5 @@
 #include "../inc/dayItem.h"
+#include "dayItem.h"
 
 DayItemModel::DayItemModel(QObject *parent): QAbstractTableModel(parent)
 {   
@@ -115,5 +116,19 @@ QHash<int, QByteArray> DayItemModel::roleNames() const
     return roles;
 }
 
-DayItem::DayItem(uint32_t day, uint32_t month, uint32_t year, uint32_t dayOfWeek, QString content, bool currentMonth) 
-: day(day), month(month), year(year), content(content), dayOfWeek(dayOfWeek), currentMonth(currentMonth) {}
+Q_INVOKABLE int DayItemModel::rowWhereLocated(quint32 day_) const
+{
+    uint32_t year = day_ / 10000;
+    uint32_t month = day_ / 100 % 100;
+    uint32_t day = day_ % 100;
+
+    for(int row = 0; row < 5; row++){
+        for(int i = 0; i < 7; i++){
+            if(gridData[row][i].day == day && gridData[row][i].month == month && gridData[row][i].year == year){
+                return row;
+            }
+        }
+    }
+}
+DayItem::DayItem(uint32_t day, uint32_t month, uint32_t year, uint32_t dayOfWeek, QString content, bool currentMonth)
+    : day(day), month(month), year(year), content(content), dayOfWeek(dayOfWeek), currentMonth(currentMonth) {}

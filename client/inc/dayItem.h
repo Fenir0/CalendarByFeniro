@@ -9,10 +9,9 @@
 #include "appState.h"
 #include <qqml.h>
 
-/*
-VISUAL ELEMENTS OF THE GRID
-INDEPENDENT OF APP DATA
-*/
+// ==========================
+// DATA FOR BUILDING THE GRID
+// ==========================
 
 struct DayItem
 {
@@ -38,17 +37,21 @@ class DayItemModel: public QAbstractTableModel
 {
     Q_OBJECT
     QML_ELEMENT
-    public:
+public:
     explicit DayItemModel(QObject* parent = nullptr);
+
     Q_INVOKABLE void loadMonth(int year, int month);
     
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int    rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
-    QHash<int, QByteArray> roleNames() const ;
+    QHash<int, QByteArray> roleNames() const;
+
+    Q_INVOKABLE int rowWhereLocated(quint32 day) const;
     
-    private:
+private:
     QVector<QVector<DayItem>> gridData;
 
 };

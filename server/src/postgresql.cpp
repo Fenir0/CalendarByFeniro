@@ -144,17 +144,17 @@ ACTION_RESULT PostgresqlWorker::changeAccessLevelForUser(uint32_t file_id, std::
 ACTION_RESULT PostgresqlWorker::deleteFile(uint32_t file_id, uint32_t user_id, ACTION_RESULT permission)
 {   
     pqxx::work w(connection);
-    pqxx::params p(file_id, user_id);
+    pqxx::params p(file_id, user_id), p1(file_id);
     switch (permission)
     {
     case PERMISSION_WRITE:
     case PERMISSION_READ:
-        w.exec("DELETE FROM relations WHERE file_id = $1 AND user_id = $2", p);
+        w.exec("DELETE FROM relations WHERE document_id = $ 1 AND user_id = $2", p);
         w.commit();
         return SUCCESS;
     case OWNER:
-        w.exec("DELETE FROM relations WHERE file_id = $1 AND user_id = $2;", p);
-        w.exec("DELETE FROM documents WHERE file_id = $1;", p);
+        w.exec("DELETE FROM relations WHERE document_id = $1 AND user_id = $2;", p);
+        w.exec("DELETE FROM documents WHERE document_id = $1;", p1);
         w.commit();
         return SUCCESS;
     default:

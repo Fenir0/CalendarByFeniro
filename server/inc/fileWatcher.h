@@ -23,7 +23,7 @@ public:
     void unsubscribe(FILE_ID file_id, SESSION_ID session);
     void unsubscribeAll(SESSION_ID session);
 
-    void notifyChanged(FILE_ID file, const json& data);
+    void notifyChanged(FILE_ID file, const json& data, SESSION_ID current_session = 0);
 
     static FileWatcher& instance();
 

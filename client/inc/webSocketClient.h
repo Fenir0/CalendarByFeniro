@@ -13,6 +13,10 @@
 #include <deque>
 #include <memory>
 
+// =============================
+// SESSION HANDLER
+// =============================
+
 using MessageCallback = std::function<void(const std::string&)>;
 using StatusCallback = std::function<void(bool)>;
 
@@ -28,7 +32,7 @@ public:
 
     WebSocketClient(std::string host, std::string port, MessageCallback on_msg, StatusCallback on_status);
     ~WebSocketClient();
-    void async_connect_and_handshake();
+    void async_connect_and_handshake(std::string host);
     void connectionStatus(bool statuc);
 
     void send(json&&);
@@ -45,15 +49,12 @@ private:
 
     beast::flat_buffer incoming_;
     std::deque<std::string> outbox_;
+    
     void doReadLoop();
-
     void doWriteLoop();
 
     MessageCallback on_message_;
     StatusCallback on_status_;
-
-    uint32_t client_id;
-    uint32_t server_id;
 
     QHash<QString, ResponseCallback> m_pendingRequests;
 

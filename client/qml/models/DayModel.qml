@@ -3,21 +3,24 @@ import Calendar
 
 Rectangle{
     property string itemImageSource: ""
+
     Image{
+        anchors.centerIn: parent
         source: itemImageSource
+        fillMode: Image.PreserveAspectCrop
         width: 146
         height: 146
-        anchors.horizontalCenter: parent.horizontalCenter
-        fillMode: Image.PreserveAspectCrop
+
     }
-    color: "transparent"
+
     id: day_base
     implicitWidth: 150
     implicitHeight: 150
 
     radius: 8
-    border.color: "#549ee2"
-    border.width: 6
+    color: "#549ee2"
+    border.color: "black"
+    border.width: 2
 
     property string itemText: ""
     property color  itemColor: "blue"
@@ -33,7 +36,7 @@ Rectangle{
     visible: true
     Column{
         padding: 10
-        Text {text: dayOfMonth; color: "#1700ff"}
+        Text {text: dayOfMonth; color: '#000000'}
 
         Text{
             text: {
@@ -48,6 +51,9 @@ Rectangle{
                     default: return "___";
                 }
             }
+            color: '#0f5e25'
+            font.bold: true
+
         }
         Text{
             text:itemText 

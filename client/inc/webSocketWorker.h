@@ -18,6 +18,10 @@
 #include <memory>
 #include <atomic>
 
+// =========================
+// COMMUNICATION WITH SERVER
+// =========================
+
 class WebSocketWorker: public QObject{
     Q_OBJECT
     Q_PROPERTY(bool isConnected READ isConnected NOTIFY connectionStateChanged)
@@ -32,21 +36,31 @@ public:
     QStringList messages() const;
     QString connectionStatus() const;
 
-    Q_INVOKABLE void connectToServer();
+    Q_INVOKABLE void connectToServer(QString IP);
     Q_INVOKABLE void disconnectFromServer();
     Q_INVOKABLE void sendRequest(const json& message, ResponseCallback callback);
     Q_INVOKABLE void sendMessage(const std::string& message);
     Q_INVOKABLE void sendMessage(const QString& message);
     
     void onRawMessageReceived(const std::string& msg);
+
+    void setIp(std::string ip);
+    void setPort(uint16_t port);
+
+    std::string getIp();
+    uint16_t    getPort();
 signals:
-    void messagesUpdated();
     void connectionStateChanged();
+    void messagesUpdated();
+    void connectionSucceeded();
+    void connectionFailed();
 
 private slots:
     void onRawConnectionChanged(bool connected); 
 
 private:
+    std::string ip;
+    uint16_t port;
 explicit WebSocketWorker(QObject *parent = nullptr);
     std::shared_ptr<WebSocketClient> m_client;  
 

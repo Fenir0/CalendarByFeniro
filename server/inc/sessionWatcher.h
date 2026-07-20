@@ -20,7 +20,7 @@ public:
     void add(std::shared_ptr<WebSocketSession> session);
     void remove(SESSION_ID session_id);
 
-    void sendTo(const std::set<SESSION_ID>& ids, const json& message);
+    void sendTo(const std::set<SESSION_ID>& ids, const json& message, SESSION_ID current_session = 0);
     static SessionWatcher& instance();
 
 private:

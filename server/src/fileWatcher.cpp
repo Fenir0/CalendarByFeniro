@@ -11,6 +11,7 @@ void FileWatcher::subscribe(FILE_ID file_id, SESSION_ID session)
 
 void FileWatcher::unsubscribe(FILE_ID file_id, SESSION_ID session)
 {
+    if(file_id == 0) return;
     std::lock_guard<std::mutex> lock(mutex_);
     if(subscribers_.find(file_id) != subscribers_.end()){
         if(subscribers_[file_id].find(session) != subscribers_[file_id].end()){
@@ -31,11 +32,11 @@ void FileWatcher::unsubscribeAll(SESSION_ID session)
     }
 }
 
-void FileWatcher::notifyChanged(FILE_ID file_id, const json &data)
+void FileWatcher::notifyChanged(FILE_ID file_id, const json &data, SESSION_ID current_session)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if(subscribers_.find(file_id) != subscribers_.end()){
-        SessionWatcher::instance().sendTo(subscribers_[file_id], data);
+        SessionWatcher::instance().sendTo(subscribers_[file_id], data, current_session);
     } 
 }
 

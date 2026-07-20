@@ -5,22 +5,27 @@
 #include <QtQml/QQmlEngine> 
 #include <qqml.h>
 
+#include <string>
+#include <fstream>
+
 #include "appState.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include <string>
-#include <fstream>
+// ====================
+// APP DATA CONTROLLER
+// ====================
 
 class DayDataHandler: public QObject {
     Q_OBJECT
     QML_ELEMENT
 
-    public:
+public:
     static DayDataHandler& instance();
     DayDataHandler();
     DayDataHandler(const std::string& filename);
+
     Q_INVOKABLE void        setContentByYMD(quint32 y_m_d, QString content);
     Q_INVOKABLE QString     getContentByYMD(quint32 y_m_d);
 
@@ -30,13 +35,13 @@ class DayDataHandler: public QObject {
     void loadCurrentStateFromFile(const std::string& filename);
 
     Q_INVOKABLE json getDataMapAsJSON();
-    void updateDataMapFromJSON(const json& data);
-    void setDataMapFromJSON(const json& data);
+    void             updateDataMapFromJSON(const json& data);
+    void             setDataMapFromJSON(const json& data);
 
-    signals:
+signals:
     void newDataSet();
     void dayDataChanged(quint32 y_m_d);
-    private:
+private:
     std::map<quint32, QString> currentDataMap;
 };
 

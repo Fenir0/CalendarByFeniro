@@ -1,6 +1,7 @@
 #include "../inc/webSocketWorker.h"
 #include "../inc/dayDataHandler.h"
 #include <iostream>
+#include "webSocketWorker.h"
 
 uint32_t generateRequestId(){
     static std::atomic<uint32_t> counter (1);
@@ -8,8 +9,8 @@ uint32_t generateRequestId(){
 }
 
 WebSocketWorker::WebSocketWorker(QObject *parent){
-                                                    // local
-    m_client = std::make_shared<WebSocketClient>("127.0.0.1", "9002",  [this](const std::string& raw_msg) {
+                                                 
+    m_client = std::make_shared<WebSocketClient>(ip, std::to_string(port),  [this](const std::string& raw_msg) {
                 QMetaObject::invokeMethod(this, [this, raw_msg]() {
                     m_messages.append(QString::fromStdString(raw_msg));
                     emit messagesUpdated(); 
@@ -19,7 +20,8 @@ WebSocketWorker::WebSocketWorker(QObject *parent){
             [this](bool connected) {
                 m_isConnected = connected;
                 QMetaObject::invokeMethod(this, [this, connected]() {
-                    emit connectionStateChanged(); 
+                    if(m_isConnected) emit connectionSucceeded(); 
+                    else emit connectionFailed();
                 }, Qt::QueuedConnection);
             });
 }
@@ -46,11 +48,11 @@ QStringList WebSocketWorker::messages() const
 QString WebSocketWorker::connectionStatus() const
 {return m_isConnected? "connected": "Disconnected"; }
 
-Q_INVOKABLE void WebSocketWorker::connectToServer()
+Q_INVOKABLE void WebSocketWorker::connectToServer(QString IP)
 {
+    std::string ip_host = IP.toStdString();
     m_connectionStatus = "Connecting";
-    emit connectionStateChanged();
-    m_client->async_connect_and_handshake();
+    m_client->async_connect_and_handshake(ip_host);
 }
 
 Q_INVOKABLE void WebSocketWorker::disconnectFromServer()
@@ -106,10 +108,26 @@ void WebSocketWorker::onRawMessageReceived(const std::string& raw_msg)
     }
 }
 
-
+void WebSocketWorker::setIp(std::string ip)
+{
+    this->ip = ip;
+}
+void WebSocketWorker::setPort(uint16_t port)
+{
+    this->port = port;
+}
+std::string WebSocketWorker::getIp()
+{
+    return ip;
+}
+uint16_t WebSocketWorker::getPort()
+{
+    return port;
+}
 void WebSocketWorker::onRawConnectionChanged(bool connected)
 {
     m_isConnected = connected;
     m_connectionStatus = connected ? "Connected" : "Disconnected";
-    emit connectionStateChanged();
+    if(m_isConnected) emit connectionSucceeded();
+    else emit connectionFailed();
 }

@@ -21,16 +21,17 @@ WebSocketClient::~WebSocketClient()
     if(m_thread.joinable()) m_thread.join();
 }
 
-void WebSocketClient::async_connect_and_handshake(){
-    std::cout << host_ << ' ' << port_;
+void WebSocketClient::async_connect_and_handshake(std::string host){
+    std::cout << host << ' ' << port_;
+    host_ = host;
+    port_ = "9002";
     resolver_.async_resolve(host_, port_, 
     [this](beast::error_code ec, tcp::resolver::results_type results){
-        std::cerr << ec.message();
         if(ec) return;
 
         asio::async_connect(ws_.next_layer(), results.begin(), results.end(),
             
-        [this](beast::error_code ec, tcp::resolver::iterator){
+        [this](beast::error_code ec, auto){
                 if(ec) return;
                 ws_.async_handshake(host_, "/",
                 
@@ -39,12 +40,17 @@ void WebSocketClient::async_connect_and_handshake(){
                         connectionStatus(true);
                         doReadLoop();
                     }
+                    else{
+                        connectionStatus(false);
+                    }
                 });
             });
     });
 }
 
-void WebSocketClient::connectionStatus(bool status){on_status_(true);}
+void WebSocketClient::connectionStatus(bool status){
+    on_status_(status);
+}
 
 
 void WebSocketClient::send(json &&message){
@@ -67,10 +73,7 @@ void WebSocketClient::doReadLoop(){
         std::string raw_message = beast::buffers_to_string(incoming_.data());
         if(json::accept(raw_message)){
             json received_json = json::parse(raw_message);
-            std::string result = received_json["result"];
             WebSocketWorker::instance().onRawMessageReceived(raw_message);
-          //  std::string value = received_json["RESPONSE"];
-            //handleTask(result, value);
         } else{
 
         }

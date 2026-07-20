@@ -3,6 +3,10 @@
 #define DATE_H
 #include <chrono>
 
+// ================
+// DATE FUNCTIONS
+// ================
+
 namespace date {
     inline int daysInMonths[] =  {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 

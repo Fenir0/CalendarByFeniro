@@ -9,7 +9,7 @@ import Calendar
 Window{
     id: editDayWindow
     width: 350
-    height: 350
+    height: 280
 
     color: '#9db8d1'
 
@@ -18,8 +18,9 @@ Window{
 
     
     Column{
+        anchors.margins: 5
         anchors.fill: parent
-        spacing: 5
+        spacing: 10
         Text{
             height: 30
             width: 170
@@ -32,7 +33,7 @@ Window{
         }  
         Rectangle{
             id: dayEditRectangle
-            height: parent.height * 4/5
+            height: parent.height * 2/3
             width: parent.width * 6/7
             color: '#a1aaaa'
             border.color: "black"
@@ -43,22 +44,33 @@ Window{
                 selectByMouse: true
                 anchors.fill: parent
                 clip:true
-                focus: true
-
                 property bool isUpdating: false
+                focus: true
                 onTextChanged:{
                     if(isUpdating) return
+
+                    if (editTextContent.height === 0 || editTextContent.width === 0) {
+                                return;
+                    }
+
                     let lines = text.split("\n");
-                    console.log(lines.length)
+
                     let modified = false;
                     var pos_ver = editTextContent.positionAt(1, editTextContent.height + 1);
-                    var pos_hor = 25;
+                    var pos_hor = 16;
                     
                     for (let i = 0; i < lines.length; i++) {
                         if (lines[i].length > pos_hor) {
                             lines[i] = lines[i].substring(0, pos_hor);
                             modified = true;
                         }
+                    }
+                    var lineHeight = editTextContent.font.pixelSize * 1.2; // Approximate line height
+                    var maxLines = 7;
+                    
+                    if (lines.length > maxLines) {
+                        lines = lines.slice(0, maxLines);
+                        modified = true;
                     }
 
                     if (modified) {
@@ -68,23 +80,28 @@ Window{
                         cursorPosition = Math.min(cursor, text.length);
                         isUpdating = false
                     }
-
-                    if(editTextContent.length >= pos_ver){
-                        editTextContent.remove(pos_ver, editTextContent.length)
-                    }
                 }
-                Keys.onEscapePressed: editDayWindow.close()
+                Keys.onEscapePressed: {
+                    AppState.highlightedDay = -1
+                    editDayWindow.close()
+                    }
+                Keys.onReturnPressed: editOkButton.clicked()
             }
         }
-        Button{
-            height: 30
+        RoundButton{
+            id: editOkButton
+            focus: true
+            height: 40
+            width: 40
             background: Rectangle{
                 color: '#6deeee'
                 border.color: "black"
                 radius: 10   
             }
-            text: "Finish edit"
+            icon.source: "../img/okButton.png"
+            icon.color: "transparent"
             anchors.horizontalCenter:parent.horizontalCenter
+            
             onClicked:{
                 DayDataHandler.setContentByYMD(editDayOfMonth, editTextContent.getText(0, editTextContent.length))
                 if(AppState.loggedIn){
@@ -98,6 +115,7 @@ Window{
                         })
                 }
                 editDayWindow.close();
+                AppState.highlightedDay = -1;
             }
         }
     }

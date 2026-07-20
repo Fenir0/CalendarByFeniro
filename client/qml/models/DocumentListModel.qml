@@ -84,6 +84,8 @@ Rectangle{
                 icon.source: "../../img/documentTrashButton.png"
                 icon.color: "transparent"
                 onClicked:{
+                    deletionDialog.documentNameDialog = documentName
+                    deletionDialog.documentIdDialog = documentId
                     deletionDialog.open()
                 }
             }
@@ -106,10 +108,19 @@ Rectangle{
         }
 
         onAccepted: {
-            console.log("Deletion confirmed")
+            console.log(documentNameDialog)
+            console.log(documentIdDialog)
+            RequestHandler.deleteFile(documentNameDialog, documentIdDialog, function(success, response){
+                if(success){
+                    console.log("File deleted")
+                }
+                else {
+                    console.log("Oops")
+                }
+            })
         }
         onRejected: {
-            console.log("Deletion confirmed")
+
         }
     }
     

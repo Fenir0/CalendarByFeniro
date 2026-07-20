@@ -90,8 +90,8 @@ TASK getTaskByString(std::string task){
     return LOGOUT;
 }
 
-WebSocketSession::WebSocketSession(tcp::socket socket,asio::io_context& ioc, asio::thread_pool& pool, uint32_t session_id) : 
-            ws_(std::move(socket)), socket_(std::move(socket)), thread_pool_(pool), database(), workspace(ioc), session_id(session_id){}
+WebSocketSession::WebSocketSession(tcp::socket socket, asio::io_context& ioc, asio::thread_pool& pool, uint32_t session_id) : 
+            ws_(std::move(socket)), thread_pool_(pool), database(), workspace(ioc), session_id(session_id){}
 
 WebSocketSession::~WebSocketSession(){std::cerr << "Destroyed\n";}
 
@@ -140,23 +140,61 @@ void WebSocketSession::onRead(beast::error_code ec, size_t n)
                 std::string res = taskResponse.dump();
                 self->sendResponse(taskResponse);
             });
+            doReadLoop();
 
          } catch (std::exception const& e) {
-             std::cerr << "Processing error: " << e.what() << std::endl;
+            std::cerr << "Processing error: " << e.what() << std::endl;
+            doReadLoop();
         }
 }
 
-void WebSocketSession::onWrite(beast::error_code ec, size_t n)
+void WebSocketSession::onWrite()
 {
-    std::cerr << "Write: " << n << " bytes (" << ec.message() << ")" << std::endl;
-    if (!ec)
-        doReadLoop();
+    std::string text_to_send;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        std::cerr << "Written\n";
+        if (write_queue_.empty()) {
+            is_writing_ = false;
+            return;
+        }
+        text_to_send = std::move(write_queue_.front());
+        write_queue_.pop_front(); 
+    }
+
+    ws_.async_write(
+        asio::buffer(text_to_send),
+        [self = shared_from_this(), text_to_send](beast::error_code ec, std::size_t /*bytes*/) {
+            if (ec) {
+                std::cerr << "Write error: " << ec.message() << std::endl;
+                self->onClose();
+                return;
+            }
+            self->onWrite();
+        }
+    );
 }
 
 void WebSocketSession::sendResponse(const json &response)
 {
-    response_ = response.dump();
-    ws_.async_write( asio::buffer(response_),beast::bind_front_handler(&WebSocketSession::onWrite, shared_from_this()));
+    std::string text = response.dump();
+    bool startWrite = false;
+
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        write_queue_.push_back(std::move(text));
+
+        if(!is_writing_){
+            is_writing_ = true;
+            startWrite = true;
+        }
+    }
+    if (startWrite) {
+        asio::post(ws_.get_executor(), [self = shared_from_this()]() {
+            self->onWrite();
+        });
+    }
+    
 }
 
 void WebSocketSession::kick()
@@ -166,14 +204,15 @@ void WebSocketSession::kick()
 
 void WebSocketSession::onClose()
 {
+
+    FileWatcher::instance().unsubscribe(current_file_id, session_id);
+    
     SessionWatcher::instance().remove(this->getId());
 
     beast::error_code ec;
-    ws_.next_layer().close(ec);
 
-    beast::error_code ec_shutdown;
-    socket_.shutdown(tcp::socket::shutdown_both, ec_shutdown);
-    socket_.close(ec_shutdown);
+    ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
+    ws_.next_layer().close(ec);
 }
 
 /*
@@ -246,6 +285,7 @@ RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
     std::string username = input["username"];
     std::string pwd      = input["password"];
     ACTION_RESULT result = database.signUserPwd(username, pwd);
+
     if(result == SUCCESS){
         logged = true;
         current_user_id = database.getUserId(username);        
@@ -253,6 +293,7 @@ RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
         userOwnedFiles = database.getVectorOfFilesByUserID(current_user_id);
         ResourceManager::createUserFolder(current_user_id);
     }
+
     json res;
     res["user_id"]  = current_user_id;
     res["username"] = current_user;
@@ -272,20 +313,30 @@ RESULT_RESPONSE WebSocketSession::handleLOGOUTrequest()
     workspace.saveDataOnServer(workspace.getData());
     workspace.resetFile();
 
+    FileWatcher::instance().unsubscribe(current_file_id, session_id);
+
     return {SUCCESS, {}};
 }
 
 RESULT_RESPONSE WebSocketSession::handleUPDATErequest(const json &input)
 {
+    if(!logged) return {NOT_LOGGED_IN, {}};
+
     json data = input["data"], updatedJson;
+    
     std::map<std::string, std::string> newData = data.get<std::map<std::string, std::string>>();
     for(const auto& [key, value]: newData){
         updatedJson[key] = value;
     }
-    json res;
+
+    json res, toUpdate;
     res["msg"] = "File changed";
-    std::string s = updatedJson.dump();
     workspace.updateDataOnServer(updatedJson);
+    
+    toUpdate["data"] = updatedJson;
+    toUpdate["request_id"] = 0;
+    FileWatcher::instance().notifyChanged(current_file_id, toUpdate, getId());
+
     return {SUCCESS, res};
 }
 
@@ -299,6 +350,7 @@ RESULT_RESPONSE WebSocketSession::handleRENAMErequest(const json &input)
     json res;
     if(result == SUCCESS){
         current_file = filename;
+        res["name"] = current_file;
         res["msg"] = "Renamed successfully";
     }
     else{
@@ -316,7 +368,6 @@ RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
     ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
     if(result == OWNER){
         result = database.changeAccessLevelForUser(file_id, username, sharedLevel);
-        return {result, PERMISSION_DENIED};
     }
     else {
         return {PERMISSION_DENIED, PERMISSION_DENIED};
@@ -345,9 +396,14 @@ RESULT_RESPONSE WebSocketSession::handleCREATErequest(const json &input)
     workspace.saveDataOnCreate(data);
     workspace.startPeriodicSave();
     workspace.setCreatorId(current_user_id);
-    userOwnedFiles.push_back({workspace.getFileId(), filename});
-    res["message"] = "File created";
+
     current_file_id = workspace.getFileId();
+    current_file = filename;
+    userOwnedFiles.push_back({workspace.getFileId(), filename});
+
+    FileWatcher::instance().subscribe(current_file_id, session_id);
+
+    res["message"] = "File created";
     res["file_id"] = current_file_id;
     return {SUCCESS, res};
 }
@@ -369,6 +425,7 @@ RESULT_RESPONSE WebSocketSession::handleLOADPEOPLErequest(const json &input)
     std::string s = data.dump();
     return {SUCCESS, data};
 }
+
 RESULT_RESPONSE WebSocketSession::handleLOADLISTrequest(const json &input)
 {
     json res, tmp = {}, data;
@@ -381,6 +438,7 @@ RESULT_RESPONSE WebSocketSession::handleLOADLISTrequest(const json &input)
     std::string s = data.dump();
     return {SUCCESS, data};
 }
+
 RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
 
 {
@@ -390,14 +448,18 @@ RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
     ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
     if(result != FAILURE){
         uint32_t creatorId = database.getFileCreatorId(file_id);
+        current_file = filename;
+        current_file_id = file_id;
+        
         json res;
         res["data"] = ResourceManager::loadAllFromFile(std::to_string(creatorId), std::to_string(file_id));
         res["file_id"] = file_id;
         res["filename"] = filename;
         workspace.setNewFile(file_id, creatorId, filename, res["data"]);
-        current_file = filename;
-        current_file_id = file_id;
         workspace.startPeriodicSave();
+        
+        FileWatcher::instance().subscribe(current_file_id, session_id);
+
         return {SUCCESS, res};
     }
     return {FAILURE, "Failed to load"};
@@ -405,11 +467,12 @@ RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
 
 RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
 {
-    ACTION_RESULT result = database.checkExistanceAndPermission(current_file_id, current_user_id); 
+    uint32_t file_id        = input["file_id"];
+    ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id); 
     if(result != PERMISSION_DENIED){
-        result = database.deleteFile(current_file_id, current_user_id, result);
+        result = database.deleteFile(file_id, current_user_id, result);
     }
-    return {result, result};
+    return {result, {result}};
 }
 
  /*
@@ -418,6 +481,8 @@ RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
 
 WebSocketServer::WebSocketServer(asio::io_context &ioc, tcp::endpoint endpoint): ioc(ioc), acceptor_(ioc, endpoint), thread_pool_(4)
 {
+    std::cout << "Server started. Connect the client to this IP\n";
+    std::cout << endpoint.address().to_string() << ":" << endpoint.port() << std::endl;
     doAccept();
 }
 

@@ -8,6 +8,10 @@
 #include "date.h"
 using date::YEAR_MONTH_DAY;
 
+// =================================
+// CURRENT APP STATE (+ USER AND FILE)
+// =================================
+
 enum AccessLevel {
     READ,
     EDIT
@@ -26,11 +30,9 @@ class AppState: public QObject{
     Q_PROPERTY(QString documentName READ getDocumentName WRITE setDocumentName  NOTIFY userChanged)
     Q_PROPERTY(AccessLevel         accessLevel  READ getAccessLevel WRITE setAccessLevel  NOTIFY parameterChanged)
 
-    Q_PROPERTY(YEAR_MONTH_DAY currentDate NOTIFY parameterChanged)    
-
-    Q_PROPERTY(int weekDayStartOfMonth READ getWeekDayStartOfMonth  NOTIFY parameterChanged)
     Q_PROPERTY(int dayAmountPrevious READ getDayAmountPrevious   NOTIFY parameterChanged)
     Q_PROPERTY(int dayAmountCurrent READ getDayAmountCurrent   NOTIFY parameterChanged)
+    Q_PROPERTY(YEAR_MONTH_DAY currentDate NOTIFY parameterChanged)    
 
     Q_PROPERTY(QString visibleMonthString READ getVisibleMonthString NOTIFY parameterChanged)
 
@@ -57,10 +59,6 @@ class AppState: public QObject{
     int  getVisibleMonth()const;
     void setVisibleMonth(int month);
     
-    int  getWeekDayStartOfMonth()  const;
-    int  getDayAmountCurrent()  const;
-    int  getDayAmountPrevious() const;
-
     int  getHighlightedDay()  const;
     void setHighlightedDay(int day);
 
@@ -70,7 +68,8 @@ class AppState: public QObject{
     int  getNextMonth()  const;
     int  getNextYear()  const;
 
-    void updateIfDayIsVisible(uint32_t ymd);
+    int  getDayAmountCurrent()  const;
+    int  getDayAmountPrevious() const;
 
     bool isSaved() const;
     void setSaved(bool newSaved);
@@ -87,7 +86,6 @@ class AppState: public QObject{
     QString getDocumentName() const;
     void setDocumentName(QString newDocumentName);
 
-
     uint32_t getDocumentId() const;
     void setDocumentId(uint32_t id);
 
@@ -96,16 +94,17 @@ class AppState: public QObject{
 
     QString getVisibleMonthString() const;
 
+    Q_INVOKABLE uint32_t getWeekDay(quint32 day) const;
+
 signals:
     void parameterChanged();
     void userChanged();
 
 private:
+    int dayAmountPrevious;
 
     YEAR_MONTH_DAY visibleDate;
-    int weekDayStartOfMonth;
     int dayAmountCurrent;
-    int dayAmountPrevious;
 
     int highlightedDay = -1;
 
