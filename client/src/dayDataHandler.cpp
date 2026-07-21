@@ -15,8 +15,7 @@ DayDataHandler::DayDataHandler(const std::string& filename){
     try{
          std::ifstream f(filename);
          json data = json::parse(f);
-         //for i in data
-         // currentDataMap.set(y_m_d, content);
+
     }
     catch (std::exception e){
 

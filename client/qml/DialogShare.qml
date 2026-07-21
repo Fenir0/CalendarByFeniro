@@ -5,7 +5,7 @@ import QtQuick.Window
 
 import Calendar
 Window{
-    id: shareWindow
+    id: dialogShare_Window
     height: 260
     width: 230
     property string documentName: ""
@@ -39,7 +39,24 @@ Window{
                 TextEdit{
                     verticalAlignment: Qt.AlignVCenter
                     anchors.fill: parent
-                    id: usernameShareEdit
+                    id: dialogShare_TextEdit_Username
+                    SequentialAnimation {
+                        id: dialogShare_SeqAnim_Username
+                        loops: 4
+                        
+                        ColorAnimation { 
+                            target: dialogShare_TextEdit_Username
+                            property: "color"
+                            to: "red"
+                            duration: 150 
+                        }
+                        ColorAnimation { 
+                            target: dialogShare_TextEdit_Username
+                            property: "color"
+                            to: "black"
+                            duration: 150
+                        }
+                    }
                 }
             }
         }
@@ -52,7 +69,7 @@ Window{
             }
             ComboBox{
                 Layout.alignment: Qt.AlignRight
-                id: accessCombo
+                id: dialogShare_ComboBox_AccessLevel
                 model: ["Editor", "Reader"]
             }
         }
@@ -63,14 +80,17 @@ Window{
                 Layout.alignment: Qt.AlignLeft
                 text: "Share"
                 onClicked:{
-                    RequestHandler.share(documentId, usernameShareEdit.text, accessCombo.currentText, function(success, documentQString){
+                    RequestHandler.share(documentId, dialogShare_TextEdit_Username.text, dialogShare_ComboBox_AccessLevel.currentText, function(success, msg){
+
                         if(success){
                             console.log("Shared successfully")
-                        }  else{
-                            console.log("Failed to fetch")
-                        }         
+                            dialogShare_Window.close()
+                        }else {
+                            if(msg == "Nouser"){
+                                dialogShare_SeqAnim_Username.start()
+                            }
+                        }
                     })
-                    shareWindow.close()
                 }
                 
             }
@@ -78,7 +98,7 @@ Window{
                 Layout.alignment: Qt.AlignRight
                 text: "Cancel"
                 onClicked:{
-                    shareWindow.close()
+                    dialogShare_Window.close()
                 }
             }
         }

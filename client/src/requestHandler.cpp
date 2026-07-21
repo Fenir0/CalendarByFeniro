@@ -50,10 +50,20 @@ void RequestHandler::login(const QString &username, const QString &pwd, QJSValue
                 }
                 break;
             case WRONG_PASSWORD:
-
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    args << false << "pwd";
+                    QJSValue calresult = callback.call(args);
+                   QString d = calresult.toString();
+                }
                 break;
             case USER_NOT_FOUND:
-
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    args << false << "user";
+                    QJSValue calresult = callback.call(args);
+                   QString d = calresult.toString();
+                }
                 break;
             }
         }, Qt::QueuedConnection);
@@ -68,8 +78,6 @@ Q_INVOKABLE void RequestHandler::signup(const QString &username, const QString &
 
     WebSocketWorker::instance().sendRequest(request, 
     [this, callback](const json& response){
-        std::string ch = response.dump();
-
         QMetaObject::invokeMethod(this, [this, callback, response](){
             ACTION_RESULT result = getActionResultFromString(response["result"]);
             switch(result){
@@ -87,7 +95,7 @@ Q_INVOKABLE void RequestHandler::signup(const QString &username, const QString &
             case USERNAME_TAKEN:
                 if(callback.isCallable()){
                     QJSValueList args;
-                    args << false << "Username taken";
+                    args << false << "user";
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
                 }
@@ -193,6 +201,7 @@ Q_INVOKABLE void RequestHandler::create(const QString& filename, const json &dat
             case SUCCESS:
                 if(callback.isCallable()){
                     AppState::instance().setDocumentId(response["file_id"]);
+                    AppState::instance().setAccessLevel(response["access_level"]);
                     QJSValueList args;
                     args << true << "Saved successully";
                     QJSValue calresult = callback.call(args);
@@ -235,6 +244,7 @@ Q_INVOKABLE void RequestHandler::deleteFile(const QString &filename, quint32 fil
             case SUCCESS:
                 if(callback.isCallable()){
                     QJSValueList args;
+                    emit documentListChanged();
                     args << true << "Removed successully";
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
@@ -260,7 +270,7 @@ Q_INVOKABLE void RequestHandler::loadList(QJSValue callback)
                     json data = response["data"];
                     std::string cstr = data.dump();
                     QString qstr = QString::fromStdString(cstr);
-
+                    emit documentListChanged();
                     QJSValueList args;
                     args << true <<  qstr;
                     QJSValue calresult = callback.call(args);
@@ -320,6 +330,7 @@ Q_INVOKABLE void RequestHandler::loadFromServer(quint32 fileId, const QString &f
 
             AppState::instance().setDocumentName(QString::fromStdString(response["filename"]));
             AppState::instance().setDocumentId(response["file_id"]);
+            AppState::instance().setAccessLevel(response["access_level"]);
             
             switch(result){
             case SUCCESS:
@@ -351,18 +362,32 @@ Q_INVOKABLE void RequestHandler::share(quint32 file_id, const QString &username,
 
     WebSocketWorker::instance().sendRequest(request, 
     [this, callback](const json& response){
-        std::string ch = response.dump();
-
         QMetaObject::invokeMethod(this, [this, callback, response](){
             ACTION_RESULT result = getActionResultFromString(response["result"]);
             
             switch(result){
             case SUCCESS:
                 if(callback.isCallable()){
+                    char userDeletion = response.value("deleted",'f');
                     QJSValueList args;
-                    args << true << "Shared successully";
+                    if(userDeletion == 't'){
+                        args << true << "Excluded successully";
+                        emit peopleListChanged(); 
+                    }else{
+                        args << true << "Shared successully";
+                        if(AppState::instance().getDocumentId() == response["file_id"]);
+                            emit peopleListChanged();   
+                    }
                     QJSValue calresult = callback.call(args);
-                QString d = calresult.toString();
+                    QString d = calresult.toString();
+                }
+                break;
+            case USER_NOT_FOUND:
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    args << false << "Nouser";
+                    QJSValue calresult = callback.call(args);
+                    QString d = calresult.toString();
                 }
                 break;
             }

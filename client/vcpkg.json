@@ -2,11 +2,13 @@
   "name": "calendarbyfeniro",
   "version-string": "0.0.1",
   "dependencies": [
-    "qtbase",
-    "qtdeclarative",
+    "qt6-base",
+    "qt6-declarative",
     "nlohmann-json",
     "boost-asio",
     "boost-beast",
-    "openssl"
+    "boost-system",
+    "openssl",
+    "nlohmann-json"
   ]
 }

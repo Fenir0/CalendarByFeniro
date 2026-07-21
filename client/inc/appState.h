@@ -37,7 +37,7 @@ class AppState: public QObject{
     Q_PROPERTY(QString visibleMonthString READ getVisibleMonthString NOTIFY parameterChanged)
 
     Q_PROPERTY(int visibleMonth READ getVisibleMonth WRITE setVisibleMonth NOTIFY parameterChanged)
-    Q_PROPERTY(int visibleYear READ getVisibleYear    NOTIFY parameterChanged)
+    Q_PROPERTY(int visibleYear READ getVisibleYear  WRITE setVisibleYear   NOTIFY parameterChanged)
 
         
     Q_PROPERTY(int previousMonth READ getPreviousMonth    NOTIFY parameterChanged)

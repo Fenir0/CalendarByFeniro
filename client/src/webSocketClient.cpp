@@ -73,7 +73,11 @@ void WebSocketClient::doReadLoop(){
         std::string raw_message = beast::buffers_to_string(incoming_.data());
         if(json::accept(raw_message)){
             json received_json = json::parse(raw_message);
-            WebSocketWorker::instance().onRawMessageReceived(raw_message);
+            char updateSignal = received_json.value("signal",'_');
+            if(updateSignal == '_')
+                WebSocketWorker::instance().onRawMessageReceived(raw_message);
+            else 
+                WebSocketWorker::instance().onDocumentsStateChange();
         } else{
 
         }

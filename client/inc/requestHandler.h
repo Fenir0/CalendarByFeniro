@@ -53,6 +53,10 @@ class RequestHandler: public QObject{
 
     Q_INVOKABLE void loadDocumentList(QJSValue callback);
 
+    signals:
+    void peopleListChanged();
+    void documentListChanged();
+
     private:
 
     

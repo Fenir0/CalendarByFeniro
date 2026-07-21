@@ -108,6 +108,10 @@ void WebSocketWorker::onRawMessageReceived(const std::string& raw_msg)
     }
 }
 
+void WebSocketWorker::onDocumentsStateChange(){
+    emit documentsStateChanged();
+}
+
 void WebSocketWorker::setIp(std::string ip)
 {
     this->ip = ip;

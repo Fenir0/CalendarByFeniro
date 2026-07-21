@@ -43,6 +43,7 @@ public:
     Q_INVOKABLE void sendMessage(const QString& message);
     
     void onRawMessageReceived(const std::string& msg);
+    void onDocumentsStateChange();
 
     void setIp(std::string ip);
     void setPort(uint16_t port);
@@ -52,6 +53,7 @@ public:
 signals:
     void connectionStateChanged();
     void messagesUpdated();
+    void documentsStateChanged();
     void connectionSucceeded();
     void connectionFailed();
 

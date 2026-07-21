@@ -7,7 +7,7 @@ import QtQuick.Window
 import Calendar
 
 Window{
-    id: editDayWindow
+    id: editDay_Window
     width: 350
     height: 280
 
@@ -21,25 +21,31 @@ Window{
         anchors.margins: 5
         anchors.fill: parent
         spacing: 10
-        Text{
+        Rectangle{
             height: 30
             width: 170
-            wrapMode: Text.WordWrap
-            horizontalAlignment: Text.AlignHCenter
-            color:"#1700ff"
-            id: dateText
-            text: Math.floor(editDayOfMonth/10000) + ' ' + Math.floor(editDayOfMonth/100)%100 + ' ' + editDayOfMonth%100 
             anchors.horizontalCenter: parent.horizontalCenter
-        }  
+            color: "#dfdf7a"
+            radius: 20
+            border.color: "black"
+            Text{
+                anchors.fill: parent
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                color:"#1700ff"
+                text: Math.floor(editDayOfMonth/10000) + ' ' + Math.floor(editDayOfMonth/100)%100 + ' ' + editDayOfMonth%100 
+            }  
+        }
         Rectangle{
-            id: dayEditRectangle
+            id: dayEdit_EditText_Rectangle
             height: parent.height * 2/3
             width: parent.width * 6/7
             color: '#a1aaaa'
             border.color: "black"
             anchors.horizontalCenter: parent.horizontalCenter
             TextEdit{
-                id: editTextContent
+                id: dayEdit_EditText_content
                 text: editContent
                 selectByMouse: true
                 anchors.fill: parent
@@ -49,14 +55,14 @@ Window{
                 onTextChanged:{
                     if(isUpdating) return
 
-                    if (editTextContent.height === 0 || editTextContent.width === 0) {
+                    if (dayEdit_EditText_content.height === 0 || dayEdit_EditText_content.width === 0) {
                                 return;
                     }
 
                     let lines = text.split("\n");
 
                     let modified = false;
-                    var pos_ver = editTextContent.positionAt(1, editTextContent.height + 1);
+                    var pos_ver = dayEdit_EditText_content.positionAt(1, dayEdit_EditText_content.height + 1);
                     var pos_hor = 16;
                     
                     for (let i = 0; i < lines.length; i++) {
@@ -65,7 +71,7 @@ Window{
                             modified = true;
                         }
                     }
-                    var lineHeight = editTextContent.font.pixelSize * 1.2; // Approximate line height
+                    var lineHeight = dayEdit_EditText_content.font.pixelSize * 1.2; // Approximate line height
                     var maxLines = 7;
                     
                     if (lines.length > maxLines) {
@@ -83,13 +89,13 @@ Window{
                 }
                 Keys.onEscapePressed: {
                     AppState.highlightedDay = -1
-                    editDayWindow.close()
+                    editDay_Window.close()
                     }
-                Keys.onReturnPressed: editOkButton.clicked()
+                Keys.onReturnPressed: dayEdit_Button_Ok.clicked()
             }
         }
         RoundButton{
-            id: editOkButton
+            id: dayEdit_Button_Ok
             focus: true
             height: 40
             width: 40
@@ -103,9 +109,9 @@ Window{
             anchors.horizontalCenter:parent.horizontalCenter
             
             onClicked:{
-                DayDataHandler.setContentByYMD(editDayOfMonth, editTextContent.getText(0, editTextContent.length))
+                DayDataHandler.setContentByYMD(editDayOfMonth, dayEdit_EditText_content.getText(0, dayEdit_EditText_content.length))
                 if(AppState.loggedIn){
-                    RequestHandler.update(editDayOfMonth, editTextContent.text, 
+                    RequestHandler.update(editDayOfMonth, dayEdit_EditText_content.text, 
                         function(success, msg){
                             if(success){
                                 AppState.saved = true;
@@ -114,7 +120,7 @@ Window{
                             else console.log("Failed to update on server")
                         })
                 }
-                editDayWindow.close();
+                editDay_Window.close();
                 AppState.highlightedDay = -1;
             }
         }

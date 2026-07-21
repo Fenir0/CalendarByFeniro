@@ -20,6 +20,8 @@ Rectangle{
         Text{
             Layout.preferredHeight: parent.height
             text: userNameModel
+            Layout.preferredWidth: 60
+            clip:true
             leftPadding: 30
             verticalAlignment: Text.AlignVCenter
         }
@@ -31,13 +33,35 @@ Rectangle{
                 if(userAccessLevelModel == 1) return "Editor"
                 if(userAccessLevelModel == 2) return "Reader"
             }
-            visible: isCurrentUserOwner
+            visible: AppState.accessLevel != 0
         }
         ComboBox{
             Layout.preferredHeight: parent.height
-            visible: !isCurrentUserOwner
+            visible: AppState.accessLevel == 0
             Layout.alignment: Qt.AlignCenter
             model: ["Editor", "Reader"]
+        }
+        RoundButton{
+            visible: AppState.accessLevel == 0 && userNameModel != AppState.username
+            Layout.alignment: Qt.AlignRight
+            Layout.preferredWidth: 20
+            Layout.preferredHeight: 20
+            anchors.verticalCenter: parent.verticalCenter
+            id: documentListModel_RoundButton_Download
+            background: Rectangle{
+                radius: 10
+                color: "transparent"
+                border.color: "black"
+            }
+            icon.source: "../../img/documentTrashButton.png"
+            icon.color: "transparent"
+            onClicked:{
+                RequestHandler.share(AppState.documentId, userNameModel, "exclude", function(success, msg){
+                    if(success){
+                        console.log("Deleted successfully")
+                    }
+                })
+            }
         }
         
     }

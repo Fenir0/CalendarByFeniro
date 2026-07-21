@@ -24,7 +24,7 @@ Rectangle{
         Column{
             Layout.alignment: Qt.AlignRight
             RoundButton{
-                id: downloadDocumentButton
+                id: documentListModel_RoundButton_Download
                 background: Rectangle{
                     radius: 10
                     color: "transparent"
@@ -41,11 +41,10 @@ Rectangle{
                             console.log("Oops")
                         }
                     })
-                    loadMenuWindow.close();
                 }
             }
             RoundButton{
-                id: shareDocumentButton
+                id: documentListModel_RoundButton_Share
                 
                 background: Rectangle{
                     radius: 10
@@ -74,7 +73,7 @@ Rectangle{
                 }
             }
             RoundButton{
-                id: deleteDocumentButton
+                id: documentListModel_RoundButton_Delete
 
                 background: Rectangle{
                     radius: 10
@@ -93,7 +92,7 @@ Rectangle{
         }
     }
     Dialog{
-        id: deletionDialog
+        id: documentListModel_Dialog_ConfirmDeletion
         title: "Confirm"
         modal: true
 

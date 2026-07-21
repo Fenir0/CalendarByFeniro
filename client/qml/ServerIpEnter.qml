@@ -6,7 +6,7 @@ import QtQuick.Window
 import Calendar
 
 Window{
-    id: enterIpWindow
+    id: serverIpEnter_Window
     height: 180
     width: 200
     property string backColor: '#e4fbfd'
@@ -34,7 +34,7 @@ Window{
             anchors.horizontalCenter: parent.horizontalCenter
             color: editColor
             TextField {
-                id: ipEdit
+                id: serverIpEnter_TextField_Ip
                 width: parent.width
                 placeholderText: "e.g. 192.168.1.1"
                 focus: true
@@ -46,38 +46,39 @@ Window{
 
                 color: acceptableInput ? "black" : "red"
                 SequentialAnimation {
-                    id: colorBlink
+                    id: serverIpEnter_SeqAnim_IpBlink
                     loops: 4
                     
                     ColorAnimation { 
-                        target: ipEdit
+                        target: serverIpEnter_TextField_Ip
                         property: "color"
                         to: "red"
                         duration: 150 
                     }
                     ColorAnimation { 
-                        target: ipEdit
+                        target: serverIpEnter_TextField_Ip
                         property: "color"
                         to: "black"
                         duration: 150
                     }
                 }
-                Keys.onReturnPressed: confirmButton.clicked()
-                Keys.onEscapePressed: enterIpWindow.close()
+                Keys.onReturnPressed: serverIpEnter_Button_Confirm.clicked()
+                Keys.onEscapePressed: serverIpEnter_Window.close()
             }
         }
         Button{
-            id: confirmButton
+            id: serverIpEnter_Button_Confirm
             text: "confirm"
             width: parent.width * 3/5
             anchors.horizontalCenter: parent.horizontalCenter
             background: Rectangle{
                 color: buttonColor
                 radius: 10
+                border.color: "black"
             }
             onClicked:{ 
-               WebSocket.connectToServer(ipEdit.text)
-               colorBlink.start()
+               WebSocket.connectToServer(serverIpEnter_TextField_Ip.text)
+               serverIpEnter_SeqAnim_IpBlink.start()
             }
         }
     }
@@ -85,7 +86,8 @@ Connections {
         target: WebSocket
 
         function onConnectionSucceeded() {
-            enterIpWindow.close();
+            serverIpEnter_Window.close();
+            mainWindow_RoundButton_Network.clicked()
             console.log("Connected successfully!")
         }
     }

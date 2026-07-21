@@ -6,28 +6,28 @@ import QtQuick.Window
 import Calendar
 Window{
     color: backColor
-    id: loadMenuWindow
+    id: loadMenu_Window
     width: 400  
     height: 400
 
 
     property string backColor: '#e4fbfd'
     property string editColor: '#f0f0f0'
-    property string loginButtonColor: '#ffc174'
+    property string loadMenu_Button_LogInColor: '#ffc174'
     property string loggedInButtonColor: '#a84343'
     property string editForbiddenColor: '#a1aaaa'
     property string buttonColor: '#6deeee'
     property string buttonUnavailableColor: '#6273e0'
 
     RowLayout{
-        id: topButtonsLayout
+        id: loadMenu_RowLayout_TopButtons
         width: parent.width
         height:parent.height/7
         anchors.top: parent.top
         Button{
             background: Rectangle{
                 color: {
-                    if(userSettingsColumn.visible) return buttonColor
+                    if(loadMenu_Column_User.visible) return buttonColor
                     else buttonUnavailableColor
                 }
                 radius: 10
@@ -43,15 +43,15 @@ Window{
                 verticalAlignment: Text.AlignVCenter
             }
             onClicked: {
-                userSettingsColumn.visible = true
-                documentSettingsColumn.visible = false
-                documentsOverviewColumn.visible = false
+                loadMenu_Column_User.visible = true
+                loadMenu_Column_CurrentDocument.visible = false
+                loadMenu_Column_DocumentsOverview.visible = false
             }
         }
         Button{
             background: Rectangle{
                 color: {
-                    if(documentSettingsColumn.visible) return buttonColor
+                    if(loadMenu_Column_CurrentDocument.visible) return buttonColor
                     else buttonUnavailableColor
                 }
                 radius: 10
@@ -67,17 +67,17 @@ Window{
             }
             onClicked: {
             if(AppState.loggedIn) {
-                userSettingsColumn.visible = false
-                documentsOverviewColumn.visible = false
-                documentSettingsColumn.visible = true
+                loadMenu_Column_User.visible = false
+                loadMenu_Column_DocumentsOverview.visible = false
+                loadMenu_Column_CurrentDocument.visible = true
                 }
-                userModel.clear()
+                loadMenu_ListModel_User.clear()
                 if(AppState.documentId != 0){
                     RequestHandler.loadListOfPeople(AppState.documentId,  function(success, documentQString){
                         if(success){
                             var jsArray = JSON.parse(documentQString);
                             for(var i = 0; i < jsArray.length; i++){
-                                userModel.append({
+                                loadMenu_ListModel_User.append({
                                     "userName": jsArray[i].name,
                                     "accessLevel": jsArray[i].accessLevel,
                                     "isOwner": jsArray[i].isOwner,
@@ -96,7 +96,7 @@ Window{
         Button{
             background: Rectangle{
                 color: {
-                    if(documentsOverviewColumn.visible) return buttonColor
+                    if(loadMenu_Column_DocumentsOverview.visible) return buttonColor
                     else buttonUnavailableColor
                 }
                 radius: 10
@@ -112,18 +112,18 @@ Window{
             }
             onClicked: {
                 if(AppState.loggedIn) {
-                    userSettingsColumn.visible = false
-                    documentsOverviewColumn.visible = true
-                    documentSettingsColumn.visible = false
+                    loadMenu_Column_User.visible = false
+                    loadMenu_Column_DocumentsOverview.visible = true
+                    loadMenu_Column_CurrentDocument.visible = false
                 
-                    documentModel.clear()
+                    loadMenu_ListModel_Document.clear()
 
                     RequestHandler.loadList(function(success, documentQString){
                         if(success){
                             var jsArray = JSON.parse(documentQString);
 
                             for(var i = 0; i < jsArray.length; i++){
-                                documentModel.append({
+                                loadMenu_ListModel_Document.append({
                                     "documentName": jsArray[i].name,
                                     "documentId": jsArray[i].id
                                 })
@@ -139,8 +139,8 @@ Window{
         }
     }
     Rectangle{
-        id:spacer
-        anchors.top: topButtonsLayout.bottom
+        id: loadMenu_Rectangle_Spacer
+        anchors.top: loadMenu_RowLayout_TopButtons.bottom
         color: "transparent"
         width: parent.width
         height: parent.height/10
@@ -148,18 +148,18 @@ Window{
 // =========================
 // USER
 // =========================
-    Column{
-        id: userSettingsColumn
+Column{
+        id: loadMenu_Column_User
         
         property bool loginInProgress: false
 
-        anchors.top:spacer.bottom
+        anchors.top:loadMenu_Rectangle_Spacer.bottom
         width: parent.width
-        height: parent.height * 6/7 - spacer.height
+        height: parent.height * 6/7 - loadMenu_Rectangle_Spacer.height
         visible: true
         spacing: 20
         Text{
-            id: textResult
+            id: loadColumn_Text_IfLoggedIn
             anchors.horizontalCenter: parent.horizontalCenter
             text:{
                 if(AppState.loggedIn) return "Logged in:"
@@ -171,30 +171,47 @@ Window{
             height: parent.height/8
             anchors.horizontalCenter: parent.horizontalCenter
             Text{
+                id: loadMenu_Text_User
                 text: "User: "
                 Layout.alignment: Qt.AlignLeft
                 Layout.preferredHeight: parent.height
                 verticalAlignment: Text.AlignVCenter
+                SequentialAnimation {
+                    id: loadMenu_SeqAnim_BlinkUser
+                    loops: 4
+                    
+                    ColorAnimation { 
+                        target: loadMenu_Text_User
+                        property: "color"
+                        to: "red"
+                        duration: 150 
+                    }
+                    ColorAnimation { 
+                        target: loadMenu_Text_User
+                        property: "color"
+                        to: "black"
+                        duration: 150
+                    }
+                }
             }
             Rectangle{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
                 color: editColor
-                id: usernameEditRectangle
+                id: loadMenu_Rectangle_TextEdit
                 border.color: "black"
-                TextEdit{
-                    id:usernameEdit
-                    height: parent.height
+
+                TextInput {
+                    id: loadMenu_TextInput_Username
                     anchors.fill: parent
-                    verticalAlignment: Text.AlignVCenter
+                    verticalAlignment: TextInput.AlignVCenter
                     selectByMouse: true
-                    focus:true
-                    text: {
-                        if(AppState.loggedIn) return AppState.username
-                        else return ""
-                    }
-                    readOnly: {return (AppState.loggedIn)?  true:false}
+                    focus: true
+                    wrapMode: TextInput.NoWrap 
+                    clip: true
+                    text: AppState.loggedIn ? AppState.username : ""
+                    readOnly: AppState.loggedIn 
                 }
             }
         }
@@ -203,28 +220,46 @@ Window{
             height: parent.height/8
             anchors.horizontalCenter: parent.horizontalCenter
             Text{
+                id: loadColumn_Text_Password
                 text: "Password"
                 Layout.alignment: Qt.AlignLeft
                 Layout.preferredHeight: parent.height
                 verticalAlignment: Text.AlignVCenter
+                SequentialAnimation {
+                    id: loadMenu_SeqAnim_pwdBlink
+                    loops: 4
+                    
+                    ColorAnimation { 
+                        target: loadColumn_Text_Password
+                        property: "color"
+                        to: "red"
+                        duration: 150 
+                    }
+                    ColorAnimation { 
+                        target: loadColumn_Text_Password
+                        property: "color"
+                        to: "black"
+                        duration: 150
+                    }
+                }
             }
             Rectangle{
                 Layout.preferredWidth: parent.width * 2/5
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignRight
                 color: editColor
-                id: passwordEditRectangle
+                id: loadMenu_Rectangle_Password
                 border.color: "black"
-                TextEdit{
-                    id: passwordEdit
-                    verticalAlignment: Text.AlignVCenter
+                TextInput {
+                    id: loadMenu_TextInput_Password
                     anchors.fill: parent
+                    verticalAlignment: TextInput.AlignVCenter
                     selectByMouse: true
-                    text: {
-                        if (AppState.loggedIn) return  "***"
-                        else return ""
-                    }
-                    readOnly: {return (AppState.loggedIn)?  true:false}
+                    focus: true
+                    wrapMode: TextInput.NoWrap 
+                    clip: true
+                    text: AppState.loggedIn ? "***" : ""
+                    readOnly: AppState.loggedIn 
                 }
             }
         }
@@ -232,27 +267,31 @@ Window{
             width:parent.width * 4/5
             anchors.horizontalCenter: parent.horizontalCenter
             Button{
-                id: loginButton
+                id: loadMenu_Button_LogIn
                 text: "Log in"
                 Layout.alignment: Qt.AlignLeft
                 background: Rectangle{
                     color:{ 
                     if(AppState.loggedIn) return loggedInButtonColor
-                    else return loginButtonColor
+                    else return loadMenu_Button_LogInColor
                     }
                     radius: 10
                 }    
                 onClicked:{
-                  //  loginInProgress = true
-                    RequestHandler.login(usernameEdit.text, passwordEdit.text, function(success, msg){
+                    RequestHandler.login(loadMenu_TextInput_Username.text, loadMenu_TextInput_Password.text, function(success, msg){
 
                         if(success){
-                            usernameEditRectangle.color = editForbiddenColor
-                            passwordEditRectangle.color = editForbiddenColor
+                            loadMenu_Rectangle_TextEdit.color = editForbiddenColor
+                            loadMenu_Rectangle_Password.color = editForbiddenColor
                             console.log("Log in successful")
                             AppState.loggedIn = true
                         }else{
-                            console.log("Log in failed:", msg)
+                            if(msg == "pwd"){
+                                loadMenu_SeqAnim_pwdBlink.restart()
+                            }
+                            else if(msg == "user"){
+                                loadMenu_SeqAnim_BlinkUser.restart()
+                            }
                         }
                     })
                 }
@@ -263,20 +302,22 @@ Window{
                 background: Rectangle{
                     color:{ 
                     if(AppState.loggedIn) return loggedInButtonColor
-                    else return loginButtonColor
+                    else return loadMenu_Button_LogInColor
                     }
                     radius: 10
                 }     
                 onClicked:{
-                    RequestHandler.signup(usernameEdit.text, passwordEdit.text, function(success, msg){
-                        textResult.text(msg)
+                    RequestHandler.signup(loadMenu_TextInput_Username.text, loadMenu_TextInput_Password.text, function(success, msg){
                         if(success){
-                            usernameEditRectangle.color = editForbiddenColor
-                            passwordEditRectangle.color = editForbiddenColor
+                            loadMenu_Rectangle_TextEdit.color = editForbiddenColor
+                            loadMenu_Rectangle_Password.color = editForbiddenColor
                             console.log("Sign up successful")
                             AppState.loggedIn = true
                         }else{
-                            console.log("Sign up failed:", msg)
+                            if(msg == "user"){
+                                console.log(123)
+                                loadMenu_SeqAnim_BlinkUser.restart()
+                            }
                         }
                     })
                 }
@@ -287,16 +328,16 @@ Window{
                 background: Rectangle{
                     color:{ 
                         if(!AppState.loggedIn) return loggedInButtonColor
-                        else return loginButtonColor
+                        else return loadMenu_Button_LogInColor
                     }
                     radius: 10
                 }                
                 onClicked:{
                     RequestHandler.logout(function(success, msg){
-                        textResult.text(msg)
+                        loadColumn_Text_IfLoggedIn.text(msg)
                         if(success){
-                            usernameEditRectangle.color = editColor
-                            passwordEditRectangle.color = editColor
+                            loadMenu_Rectangle_TextEdit.color = editColor
+                            loadMenu_Rectangle_Password.color = editColor
                             console.log("You are logged out")
                             AppState.loggedIn = false
                         }else{
@@ -306,144 +347,232 @@ Window{
                 }
             }
         }
-        Text{
-            id: userEditResult
-            
-        }
     }
 // =========================
 // CURRENT DOCUMENT
 // =========================
-    ListModel{
-        id: userModel
-    }
-    Column{
-        id: documentSettingsColumn
-        visible: false
+ListModel{
+    id: loadMenu_ListModel_User
+}
+Column{
+    id: loadMenu_Column_CurrentDocument
+    visible: false
 
-        anchors.top:spacer.bottom
-        height: parent.height * 6/7 - spacer.height
-        width: parent.width
-        spacing: 10
+    anchors.top:loadMenu_Rectangle_Spacer.bottom
+    height: parent.height * 6/7 - loadMenu_Rectangle_Spacer.height
+    width: parent.width
+    spacing: 10
+
+    Text{
+        anchors.horizontalCenter: parent.horizontalCenter
+        text:{
+            if(AppState.accessLevel == 2) return "You can only view"
+            if(AppState.documentId == 0) return "No document loaded from server.\nSave this as new, or load from server"
+            else {
+                return "Changes are saved"
+            }
+        }
+    }
+    RowLayout{
+        width:parent.width * 4/5
+        height: parent.height/8
+        anchors.horizontalCenter: parent.horizontalCenter
         Text{
-            id: textDocument
-            anchors.horizontalCenter: parent.horizontalCenter
-            text:{
-                if(AppState.documentId == 0) return "No document loaded from server.\nSave this as new, or load from server"
-                else {
-                    return "Changes are saved"
-                }
-            }
+            text: "Document name: "
+            height: parent.height/5
+            Layout.alignment: Qt.AlignLeft
+            verticalAlignment: Text.AlignVCenter
         }
-        RowLayout{
-            width:parent.width * 4/5
-            height: parent.height/8
-            anchors.horizontalCenter: parent.horizontalCenter
-            Text{
-                text: "Document name: "
-                height: parent.height/5
-                Layout.alignment: Qt.AlignLeft
+        Rectangle{
+            Layout.preferredWidth: parent.width * 2/5
+            Layout.preferredHeight: parent.height
+            Layout.alignment: Qt.AlignRight
+            color: editColor
+            TextEdit{
                 verticalAlignment: Text.AlignVCenter
-            }
-            Rectangle{
-                Layout.preferredWidth: parent.width * 2/5
-                Layout.preferredHeight: parent.height
-                Layout.alignment: Qt.AlignRight
-                color: editColor
-                TextEdit{
-                    verticalAlignment: Text.AlignVCenter
-                    id:documentNameEdit
-                    anchors.fill: parent
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    selectByMouse: true
-                    text:  AppState.documentName
-                }
-            }
-        }
-        RowLayout{
-            width:parent.width * 4/5
-            height: parent.height/8
-            anchors.horizontalCenter: parent.horizontalCenter
-            Button{
-                text: {
-                    if (AppState.documentId != 0) return "Rename"
-                    else return "Save"
-                }
-                Layout.alignment: Qt.AlignLeft
-                onClicked:{
-                    if(AppState.documentId == 0) {
-                        RequestHandler.create(documentNameEdit.text, DayDataHandler.getDataMapAsJSON(), function(success, msg){
-                            textResult.text(msg)
-                            if(success){
-                                console.log("Document saved")
-                            }else{
-                                console.log("Failed to save:", msg)
-                            }
-                        })
-                    }
-                    else{
-                        RequestHandler.rename(documentNameEdit.text, AppState.documentId, function(success, msg){
-                            textResult.text(msg)
-                            if(success){
-                                console.log("Document renamed")
-                            }
-                            else{
-                                console.log("Failed to rename:", msg)
-                            }
-                        })
-                    }
-                }
-            }
-        }
-
-        ListView{ 
-            id: userListView
-            width: parent.width * 4/5
-            height: parent.height * 2/5
-
-            anchors.horizontalCenter: parent.horizontalCenter
-            model: userModel
-            delegate: UserListModel{
-                    userNameModel: model.userName
-                    userAccessLevelModel: model.accessLevel
-                    isCurrentUserOwner: model.isOwner
-                    userId: model.userId
-            }
-        }
-        Button{
-            text: "Change access rules"
-            width: parent.width * 3/5
-            height: parent.height * 1/6
-            anchors.horizontalCenter: parent.horizontalCenter
-            background: Rectangle{
-                color: loggedInButtonColor
-                radius: 10
+                id:loadMenu_TextEdit_DocumentName
+                anchors.fill: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                selectByMouse: true
+                text:  AppState.documentName
             }
         }
     }
-    // - - - - - 
+    RowLayout{
+        width:parent.width * 4/5
+        height: parent.height/8
+        anchors.horizontalCenter: parent.horizontalCenter
+        Button{
+            text: {
+                if (AppState.documentId != 0) return "Rename"
+                else return "Save"
+            }
+            Layout.alignment: Qt.AlignLeft
+            onClicked:{
+                if(AppState.documentId == 0) {
+                    RequestHandler.create(loadMenu_TextEdit_DocumentName.text, DayDataHandler.getDataMapAsJSON(), function(success, msg){
+                        loadColumn_Text_IfLoggedIn.text(msg)
+                        if(success){
+                            console.log("Document saved")
+                        }else{
+                            console.log("Failed to save:", msg)
+                        }
+                    })
+                }
+                else{
+                    RequestHandler.rename(loadMenu_TextEdit_DocumentName.text, AppState.documentId, function(success, msg){
+                        loadColumn_Text_IfLoggedIn.text(msg)
+                        if(success){
+                            console.log("Document renamed")
+                        }
+                        else{
+                            console.log("Failed to rename:", msg)
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    ListView{ 
+        width: parent.width * 4/5
+        height: parent.height * 2/5
+        clip: true
+        anchors.horizontalCenter: parent.horizontalCenter
+        model: loadMenu_ListModel_User
+        delegate: UserListModel{
+                userNameModel: model.userName
+                userAccessLevelModel: model.accessLevel
+                isCurrentUserOwner: model.isOwner
+                userId: model.userId
+        }
+    }
+    Connections {
+        target: RequestHandler
+        function onPeopleListChanged() {
+            console.log("Reloading list of users")
+            loadMenu_ListModel_User.clear()
+            if(AppState.documentId != 0){
+                RequestHandler.loadListOfPeople(AppState.documentId,  function(success, documentQString){
+                    if(success){
+                        var jsArray = JSON.parse(documentQString);
+                        for(var i = 0; i < jsArray.length; i++){
+                            loadMenu_ListModel_User.append({
+                                "userName": jsArray[i].name,
+                                "accessLevel": jsArray[i].accessLevel,
+                                "isOwner": jsArray[i].isOwner,
+                                "userId": jsArray[i].id
+                            })
+                        }
+                        console.log("Loaded people")
+                    }  else{
+                        console.log("Failed to fetch")
+                    }         
+
+                })
+            }
+        }
+    }
+    Connections {
+        target: WebSocket
+        function pnDocumentsStateChanged() {
+            console.log("Reloading list of users")
+            loadMenu_ListModel_User.clear()
+            if(AppState.documentId != 0){
+                RequestHandler.loadListOfPeople(AppState.documentId,  function(success, documentQString){
+                    if(success){
+                        var jsArray = JSON.parse(documentQString);
+                        for(var i = 0; i < jsArray.length; i++){
+                            loadMenu_ListModel_User.append({
+                                "userName": jsArray[i].name,
+                                "accessLevel": jsArray[i].accessLevel,
+                                "isOwner": jsArray[i].isOwner,
+                                "userId": jsArray[i].id
+                            })
+                        }
+                        console.log("Loaded people")
+                    }  else{
+                        console.log("Failed to fetch")
+                    }         
+
+                })
+            }
+        }
+    }
+}
+// =========================
+// LIST OF DOCUMENTS
+// =========================
     ListModel{
-        id: documentModel
+        id: loadMenu_ListModel_Document
     }
     Column{
-        id: documentsOverviewColumn
+        id: loadMenu_Column_DocumentsOverview
         visible: false
             
-        anchors.top:spacer.bottom
+        anchors.top:loadMenu_Rectangle_Spacer.bottom
         width: parent.width
-        height: parent.height * 6/7 - spacer.height
+        height: parent.height * 6/7 - loadMenu_Rectangle_Spacer.height
         spacing: 20
         ListView{
-            id: documentListView
+            clip: true
             width: parent.width * 4/5
             height: parent.height * 4/5
 
             anchors.horizontalCenter: parent.horizontalCenter
-            model: documentModel
+            model: loadMenu_ListModel_Document
             delegate: DocumentListModel{
                 documentName: model.documentName
                 documentId: model.documentId
             }
+        }
+    }
+    Connections {
+        target: RequestHandler
+        function documentListChanged() {
+            console.log("Reloading docs")
+            loadMenu_ListModel_Document.clear()
+
+            RequestHandler.loadList(function(success, documentQString){
+                if(success){
+                    var jsArray = JSON.parse(documentQString);
+
+                    for(var i = 0; i < jsArray.length; i++){
+                        loadMenu_ListModel_Document.append({
+                            "documentName": jsArray[i].name,
+                            "documentId": jsArray[i].id
+                        })
+                    }
+                    console.log("Loaded")
+                }  else{
+                    console.log("Failed to fetch")
+                }         
+
+            })
+        }
+    }
+    Connections {
+        target: WebSocket
+        function onDocumentsStateChanged() {
+            console.log("Reloading docs")
+            loadMenu_ListModel_Document.clear()
+
+            RequestHandler.loadList(function(success, documentQString){
+                if(success){
+                    var jsArray = JSON.parse(documentQString);
+
+                    for(var i = 0; i < jsArray.length; i++){
+                        loadMenu_ListModel_Document.append({
+                            "documentName": jsArray[i].name,
+                            "documentId": jsArray[i].id
+                        })
+                    }
+                    console.log("Loaded")
+                }  else{
+                    console.log("Failed to fetch")
+                }         
+
+            })
         }
     }
 }
