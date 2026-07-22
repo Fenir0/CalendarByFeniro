@@ -288,6 +288,7 @@ ACTION_RESULT PostgresqlWorker::renameFile(uint32_t file_id, uint32_t user_id, s
 
 uint32_t PostgresqlWorker::registerFile(std::string newName, uint32_t user_id)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     uint32_t file_id;
     pqxx::work w(connection);
     try{

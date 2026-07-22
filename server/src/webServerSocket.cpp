@@ -395,14 +395,16 @@ RESULT_RESPONSE WebSocketSession::handleCREATErequest(const json &input)
             return {FILENAME_TAKEN, res};
         }
     }
+    workspace.setCreatorId(current_user_id);
     if(current_file_id != 0){
         FileWatcher::instance().unsubscribe(current_file_id, session_id);
+        workspace.setFileId(database.registerFile(filename, current_user_id));
         workspace.saveDataOnCreate(res);
     }
     else{
+        workspace.setFileId(database.registerFile(filename, current_user_id));
         workspace.saveDataOnCreate(data);
     }
-    workspace.setFileId(database.registerFile(filename, current_user_id));
     workspace.startPeriodicSave();
     workspace.setCreatorId(current_user_id);
 

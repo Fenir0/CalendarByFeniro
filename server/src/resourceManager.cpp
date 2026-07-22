@@ -25,6 +25,17 @@ void ResourceManager::createUserFolder(uint32_t user_id)
 json ResourceManager::loadAllFromFile(const std::string& userfolder, const std::string& file) 
 {
     try{
+        std::filesystem::path filepath = getBasePath() / userfolder / (file + ".json");
+
+        if (!std::filesystem::exists(filepath)) {
+            std::cerr << "File does not exist: " << filepath << "\n";
+            return json::object();  
+        }
+        
+        if (std::filesystem::file_size(filepath) == 0) {
+            std::cerr << "File is empty (0 bytes): " << filepath << "\n";
+            return json::object();  
+        }
         std::ifstream f(getBasePath().string() + "/" +userfolder + "/" + file + ".json");
         json data = json::parse(f);
         f.close();
@@ -41,6 +52,7 @@ void ResourceManager::saveAllIntoFile(const std::string& userfolder, const std::
 {
     try{
         std::ofstream f(getBasePath().string() + "/" +userfolder + "/" + file + ".json");
+        if(data.empty()) data = json::object();
         f << data;
         std::string s = data.dump();
         f.close();

@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(libpqxx REQUIRED)
-
 set(HEADERS 
     inc/webServerSocket.h 
     inc/postgresql.h
@@ -41,5 +39,5 @@ target_link_libraries(Server PRIVATE
     Boost::system
     Threads::Threads
     nlohmann_json::nlohmann_json
-    libpqxx::pqxx  
+    pqxx  
 )
