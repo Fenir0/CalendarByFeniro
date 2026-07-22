@@ -35,7 +35,7 @@ git clone https://github.com/microsoft/vcpkg.git
 
 3. Download the project files
 ```bash
-git clone https://github.com/Fenir0/CalendarByFeniro
+git clone -b main https://github.com/Fenir0/CalendarByFeniro
 cd CalendarByFeniro
 
 # Continue to client folder:
