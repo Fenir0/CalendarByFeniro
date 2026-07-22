@@ -75,9 +75,9 @@ END;
 
 PostgresqlWorker::PostgresqlWorker():
 connection("user=postgres password=admin host=localhost port=5432 dbname=calendarbyfeniro target_session_attrs=read-write"){
-    // pqxx::work w(connection);
-    // pqxx::result r = w.exec(init);
-    // w.commit();
+    pqxx::work w(connection);
+    pqxx::result r = w.exec(init);
+    w.commit();
 }
 
 
