@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 
 #include <QQmlContext>
+#include <QQuickStyle>
 
 #include <chrono>
 
@@ -22,6 +23,8 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
     app.setWindowIcon(QIcon("./img/editButton.png"));
+
+    QQuickStyle::setStyle("Fusion"); 
 
     WebSocketWorker* webSocketWorker = &WebSocketWorker::instance();
     RequestHandler requestHandler;

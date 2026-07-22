@@ -47,7 +47,7 @@ TASK getTaskByString(std::string task){
     if(task == "LOADLIST")return LOADLIST;
     if(task == "LOADPEOPLE") return LOADPEOPLE;
     if(task == "LOAD")   return LOAD;
-    if(task == "DELETE") return DELETE;
+    if(task == "DELETE") return REMOVE;
     return LOGOUT;
 }
 
@@ -217,7 +217,7 @@ RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json &input)
     case LOADLIST:
         return handleLOADLISTrequest(input);
 
-    case DELETE:
+    case REMOVE:
         return handleDELETErequest(input);
                                       
     default:

@@ -19,19 +19,18 @@ Features:
 	- nlohmann-json
 # Debian 13:
 
-1. Download [vcpkg](https://github.com/microsoft/vcpkg) from official Microsoft repository, run the bootstrap
-```bash
-git clone https://github.com/microsoft/vcpkg.git
-./vcpkg/bootstrap-vcpkg.sh 
-```
-
-2. Download necessary packages
+1. Download necessary packages
 ```bash
 # Both server and client!
 sudo apt install build-essential cmake curl zip unzip tar git qt6-base-dev qt6-declarative-dev libssl-dev pkg-config
 
 # Server:
 sudo apt install libpqxx-dev libboost-system-dev nlohmann-json3-dev postgresql postgresql-contrib bison flex
+```
+2. Download [vcpkg](https://github.com/microsoft/vcpkg) from official Microsoft repository, run the bootstrap
+```bash
+git clone https://github.com/microsoft/vcpkg.git
+./vcpkg/bootstrap-vcpkg.sh 
 ```
 
 3. Download the project files

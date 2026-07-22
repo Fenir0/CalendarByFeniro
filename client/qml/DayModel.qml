@@ -2,6 +2,7 @@ import QtQuick
 import Calendar
 
 Rectangle{
+    id: day_base
     property string itemImageSource: ""
 
     Image{
@@ -12,8 +13,6 @@ Rectangle{
         height: 146
 
     }
-
-    id: day_base
     implicitWidth: 150
     implicitHeight: 150
 

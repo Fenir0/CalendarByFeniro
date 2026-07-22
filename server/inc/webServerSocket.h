@@ -31,7 +31,7 @@ enum TASK{
     LOAD,  
     LOADLIST, 
     LOADPEOPLE,
-    DELETE  
+    REMOVE  
 };
 
 
