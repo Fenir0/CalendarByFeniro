@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+
 std::string init = R"(
 BEGIN;
 
@@ -85,8 +86,10 @@ connection("user=postgres password=admin host=localhost port=5432 dbname=practic
 
 ACTION_RESULT PostgresqlWorker::logUserPwd(std::string username, std::string pwd)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
-    pqxx::result r = w.exec("SELECT user_password FROM users WHERE user_nickname = \'" +username+"\'");
+    pqxx::params p(username);
+    pqxx::result r = w.exec("SELECT user_password FROM users WHERE user_nickname = $1", p);
     w.commit();
 
     if(r[0][0].is_null()){
@@ -103,6 +106,7 @@ ACTION_RESULT PostgresqlWorker::logUserPwd(std::string username, std::string pwd
 
 ACTION_RESULT PostgresqlWorker::signUserPwd(std::string username, std::string password)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p (username, password);
     try{
@@ -117,7 +121,7 @@ ACTION_RESULT PostgresqlWorker::signUserPwd(std::string username, std::string pa
 
 ACTION_RESULT PostgresqlWorker::checkExistanceAndPermission(uint32_t file_id, uint32_t user_id)
 {
-    
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w_ex(connection);
     pqxx::params p (user_id, file_id);
     pqxx::result r = w_ex.exec("SELECT access_level_id FROM relations WHERE user_id = $1 AND document_id = $2", p);
@@ -133,11 +137,13 @@ ACTION_RESULT PostgresqlWorker::checkExistanceAndPermission(uint32_t file_id, ui
 
 std::vector<std::pair<uint32_t, std::string>> PostgresqlWorker::getVectorOfFilesByUserID(uint32_t user_id)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     std::vector<std::pair<uint32_t, std::string>> res;
     pqxx::work w(connection);
+    pqxx::params p(user_id);
     pqxx::result r = w.exec(
 "SELECT relations.document_id, documents.document_name  FROM relations, documents \
-WHERE relations.document_id = documents.document_id AND relations.user_id = " + std::to_string(user_id));
+WHERE relations.document_id = documents.document_id AND relations.user_id = $1", p);
     w.commit();
     for(auto const& row: r){
         res.push_back({std::stoul(row[0].c_str()), row[1].c_str()});
@@ -146,14 +152,17 @@ WHERE relations.document_id = documents.document_id AND relations.user_id = " + 
 }
 uint32_t PostgresqlWorker::getUserId(std::string username)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
-    pqxx::result r = w.exec("SELECT user_id FROM users WHERE user_nickname = '" + username + "'");
+    pqxx::params p(username);
+    pqxx::result r = w.exec("SELECT user_id FROM users WHERE user_nickname = $1", p);
     w.commit();
     return std::stoul(r[0][0].c_str());
 }
 
 std::string PostgresqlWorker::getUsername(uint32_t id)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p(id);
     pqxx::result r = w.exec("SELECT user_nickname FROM users WHERE user_id = $1", p);
@@ -163,6 +172,7 @@ std::string PostgresqlWorker::getUsername(uint32_t id)
 
 std::vector<uint32_t> PostgresqlWorker::getOtherListenersOfFile(u_int32_t file_id)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     std::vector<uint32_t> res;
     pqxx::work w(connection);
     pqxx::params p(file_id);
@@ -189,6 +199,7 @@ std::vector<std::pair<uint32_t, std::string>> PostgresqlWorker::getAllUsersOfFil
 
 uint32_t PostgresqlWorker::getFileCreatorId(uint32_t file_id)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p(file_id);
     pqxx::result r = w.exec("SELECT user_id FROM relations WHERE document_id = $1 AND access_level_id = 0", p);
@@ -198,6 +209,7 @@ uint32_t PostgresqlWorker::getFileCreatorId(uint32_t file_id)
 }
 ACTION_RESULT PostgresqlWorker::changeAccessLevelForUser(uint32_t file_id, std::string username, int shared_level)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w1(connection);
     pqxx::params p1 (username);
     pqxx::result r1 = w1.exec(R"(
@@ -238,19 +250,21 @@ ACTION_RESULT PostgresqlWorker::changeAccessLevelForUser(uint32_t file_id, std::
 
 ACTION_RESULT PostgresqlWorker::deleteFile(uint32_t file_id, uint32_t user_id, ACTION_RESULT permission)
 {   
+    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p(file_id, user_id), p1(file_id);
     switch (permission)
     {
     case PERMISSION_WRITE:
     case PERMISSION_READ:
-        w.exec("DELETE FROM relations WHERE document_id = $ 1 AND user_id = $2", p);
-        w.commit();
-        return SUCCESS;
     case OWNER:
-        w.exec("DELETE FROM relations WHERE document_id = $1;", p1);
-        w.exec("DELETE FROM documents WHERE document_id = $1;", p1);
+        w.exec("DELETE FROM relations WHERE document_id = $1 AND user_id = $2", p);
         w.commit();
+        if(getAllUsersOfFile(file_id).size() == 0){
+            pqxx::work  w1(connection);
+            w1.exec("DELETE FROM documents WHERE document_id = $1;", p1);
+            w1.commit();
+        }
         return SUCCESS;
     default:
         break;
@@ -260,6 +274,7 @@ ACTION_RESULT PostgresqlWorker::deleteFile(uint32_t file_id, uint32_t user_id, A
 
 ACTION_RESULT PostgresqlWorker::renameFile(uint32_t file_id, uint32_t user_id, std::string newName)
 {
+    std::lock_guard<std::mutex> lock(db_mutex_);
     ACTION_RESULT level = checkExistanceAndPermission(file_id, user_id);
     if(level == PERMISSION_WRITE || level == OWNER){
         pqxx::work w(connection);

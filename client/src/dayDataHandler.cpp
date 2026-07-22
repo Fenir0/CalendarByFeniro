@@ -39,23 +39,17 @@ bool DayDataHandler::isDaySaved(quint32 y_m_d)
 {
     return currentDataMap.find(y_m_d) != currentDataMap.end() && currentDataMap[y_m_d].length() > 0 ;
 }
-void DayDataHandler::saveCurrentStateIntoFile(const std::string &filename)
-{
 
+Q_INVOKABLE json DayDataHandler::setEmptyJSON()
+{
+    currentDataMap.clear();
+    emit newDataSet();
 }
 
-void DayDataHandler::loadCurrentStateFromFile(const std::string& filename)
+Q_INVOKABLE json DayDataHandler::getEmptyJSON()
 {
-    try{
-         std::ifstream f(filename);
-         json data = json::parse(f);
-         //for i in data
-         // currentDataMap.set(y_m_d, content);
-         //emit dayDataChanged(y);
-    }
-    catch (std::exception e){
-
-    }
+    json data = {};
+    return data;
 }
 
 json DayDataHandler::getDataMapAsJSON()

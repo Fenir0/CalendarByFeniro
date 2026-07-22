@@ -77,15 +77,16 @@ Rectangle{
 
                 background: Rectangle{
                     radius: 10
+                    
                     color: "transparent"
                     border.color: "black"
                 }
                 icon.source: "../../img/documentTrashButton.png"
                 icon.color: "transparent"
                 onClicked:{
-                    deletionDialog.documentNameDialog = documentName
-                    deletionDialog.documentIdDialog = documentId
-                    deletionDialog.open()
+                    documentListModel_Dialog_ConfirmDeletion.documentNameDialog = documentName
+                    documentListModel_Dialog_ConfirmDeletion.documentIdDialog = documentId
+                    documentListModel_Dialog_ConfirmDeletion.open()
                 }
             }
 

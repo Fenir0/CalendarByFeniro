@@ -40,6 +40,7 @@ Window{
                     verticalAlignment: Qt.AlignVCenter
                     anchors.fill: parent
                     id: dialogShare_TextEdit_Username
+                    leftPadding: 5
                     SequentialAnimation {
                         id: dialogShare_SeqAnim_Username
                         loops: 4

@@ -21,7 +21,7 @@ target_link_libraries(Server PRIVATE
     Boost::boost  
     Boost::system     
     Threads::Threads
-    libpqxx::libpqxx
+    libpqxx::pqxx
     Boost::headers
     nlohmann_json::nlohmann_json
 )

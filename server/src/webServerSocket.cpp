@@ -33,45 +33,6 @@ std::string getResultAsString(ACTION_RESULT result){
     }
 }
 
-std::vector<std::string> getStringVectorFromString(const std::string& transmission){
-    std::vector<std::string> res;
-    std::string tmp = "";
-    size_t i = 0;
-    while(i <= transmission.length()){
-        if(transmission[i] != '$') tmp += transmission[i];
-        else{
-            if(!tmp.empty())res.push_back(tmp);
-            tmp = "";
-        }
-        i++;
-        if(i == transmission.length()){
-            if(!tmp.empty()) res.push_back(tmp);
-            return res;
-        }
-    }
-    return res;
-}
-
-std::vector<std::string> getStringVectorFromTransmission(const json& msg){
-    std::vector<std::string> res;
-    std::string tmp = "";
-    std::string transmission = msg.dump();
-    size_t i = 0;
-    while(i <= transmission.length()){
-        if(transmission[i] != '$') tmp += transmission[i];
-        else{
-            res.push_back(tmp);
-            tmp = "";
-        }
-        i++;
-        if(i == transmission.length()){
-            if(tmp.length() > 0) res.push_back(tmp);
-            return res;
-        }
-    }
-    return res;
-}
-
 TASK getTaskByString(std::string task){
     if(task == "LOGIN")  return LOGIN;
     if(task == "SIGNUP") return SIGNUP;
@@ -79,7 +40,7 @@ TASK getTaskByString(std::string task){
 
     if(task == "UPDATE") return UPDATE;
     if(task == "CREATE")   return CREATE;
-
+    if(task == "UNSUBSCRIBE") return UNSUBSCRIBE;
     if(task == "RENAME")   return RENAME;
 
     if(task == "SHARE")  return SHARE;
@@ -238,6 +199,9 @@ RESULT_RESPONSE WebSocketSession::handleTask(TASK task, const json &input)
     case RENAME:
         return handleRENAMErequest(input);
 
+    case UNSUBSCRIBE:
+        return handleUNSUBSCRIBErequest(input);
+
     case SHARE:
         return handleSHARErequest(input);
 
@@ -268,11 +232,11 @@ RESULT_RESPONSE WebSocketSession::handleLOGINrequest(const json& input)
     std::string pwd      = input["password"];
     ACTION_RESULT result = database.logUserPwd(username, pwd);
     json res;
+
     if(result == SUCCESS){
         logged = true;
         current_user_id = database.getUserId(username);
         current_user = username;
-        userOwnedFiles = database.getVectorOfFilesByUserID(current_user_id);
         res["user_id"]  = current_user_id;
         res["username"] = current_user;
     }
@@ -280,10 +244,10 @@ RESULT_RESPONSE WebSocketSession::handleLOGINrequest(const json& input)
         res["msg"] = "USER NOT FOUND";
     }
     else if(result == WRONG_PASSWORD){
-        res["msg"] = "WRONG_PASSORD";
+        res["msg"] = "WRONG PASSORD";
     }
-    return {result, res};
 
+    return {result, res};
 }
 
 RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
@@ -299,10 +263,11 @@ RESULT_RESPONSE WebSocketSession::handleSIGNUPrequest(const json& input)
         current_user = username;
         res["user_id"]  = current_user_id;
         res["username"] = current_user;
-        userOwnedFiles = database.getVectorOfFilesByUserID(current_user_id);
         ResourceManager::createUserFolder(current_user_id);
     }
-
+    if(result == USERNAME_TAKEN){
+        res["msg"] = "USERNAME TAKEN";
+    }
     return {result, res};
 }
 
@@ -313,20 +278,21 @@ RESULT_RESPONSE WebSocketSession::handleLOGOUTrequest()
     current_file_id = 0;
     current_user = "";
     current_user_id = 0;
-    userOwnedFiles = {};
-    
+ 
     workspace.stopPeriodicSave();
     workspace.saveDataOnServer(workspace.getData());
     workspace.resetFile();
 
     FileWatcher::instance().unsubscribe(current_file_id, session_id);
 
-    return {SUCCESS, {}};
+    json res;
+    return {SUCCESS, res};
 }
 
 RESULT_RESPONSE WebSocketSession::handleUPDATErequest(const json &input)
 {
-    if(!logged) return {NOT_LOGGED_IN, {}};
+    json res;
+    if(!logged) return {NOT_LOGGED_IN, res};
 
     json data = input["data"], updatedJson;
     
@@ -335,7 +301,7 @@ RESULT_RESPONSE WebSocketSession::handleUPDATErequest(const json &input)
         updatedJson[key] = value;
     }
 
-    json res, toUpdate;
+    json toUpdate;
     res["msg"] = "File changed";
     workspace.updateDataOnServer(updatedJson);
     
@@ -350,10 +316,17 @@ RESULT_RESPONSE WebSocketSession::handleRENAMErequest(const json &input)
 {
     std::string filename = input["filename"];
     uint32_t file_id = input["file_id"];
+    json res;
+    for(auto i: database.getVectorOfFilesByUserID(current_user_id)){
+        if(i.second == filename) {
+            res["message"] = "You have access to a document with this name";
+            return {FILENAME_TAKEN, res};
+        }
+    }
+
     ACTION_RESULT result;
     result = database.renameFile(file_id, current_user_id, filename);
 
-    json res;
     if(result == SUCCESS){
         current_file = filename;
         res["name"] = current_file;
@@ -368,7 +341,15 @@ RESULT_RESPONSE WebSocketSession::handleRENAMErequest(const json &input)
     return {result, res};
 }
 
-RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
+RESULT_RESPONSE WebSocketSession::handleUNSUBSCRIBErequest(const json &input)
+{
+    if(current_file_id != 0)
+        FileWatcher::instance().unsubscribe(current_file_id, session_id);
+    json res;
+    return {SUCCESS, res};
+}
+
+RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json &input)
 {
     uint32_t file_id        = input["file_id"];
     std::string accessLevel = input["access_level"];
@@ -380,7 +361,6 @@ RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
 
     std::string username    = input["username"];
 
-    
     json res;
     ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id);   
     if(result == OWNER){
@@ -406,30 +386,33 @@ RESULT_RESPONSE WebSocketSession::handleSHARErequest(const json& input)
 RESULT_RESPONSE WebSocketSession::handleCREATErequest(const json &input)
 {
     std::string filename = input["filename"];
-    json data = input["data"];
+    json data = input["data"];  
     json res;
 
-    if(workspace.getFileId() != 0){
-        
-    }
-    for(auto i: userOwnedFiles){
+    for(auto i: database.getVectorOfFilesByUserID(current_user_id)){
         if(i.second == filename) {
             res["message"] = "You have access to a document with this name";
             return {FILENAME_TAKEN, res};
         }
     }
+    if(current_file_id != 0){
+        FileWatcher::instance().unsubscribe(current_file_id, session_id);
+        workspace.saveDataOnCreate(res);
+    }
+    else{
+        workspace.saveDataOnCreate(data);
+    }
     workspace.setFileId(database.registerFile(filename, current_user_id));
-    workspace.saveDataOnCreate(data);
     workspace.startPeriodicSave();
     workspace.setCreatorId(current_user_id);
 
     current_file_id = workspace.getFileId();
     current_file = filename;
-    userOwnedFiles.push_back({workspace.getFileId(), filename});
 
     FileWatcher::instance().subscribe(current_file_id, session_id);
 
     res["message"] = "File created";
+    res["name"] = filename;
     res["file_id"] = current_file_id;
     res["access_level"] = 0;
     return {SUCCESS, res};
@@ -455,7 +438,7 @@ RESULT_RESPONSE WebSocketSession::handleLOADPEOPLErequest(const json &input)
 RESULT_RESPONSE WebSocketSession::handleLOADLISTrequest(const json &input)
 {
     json res, tmp = {}, data;
-    for(auto it: userOwnedFiles){
+    for(auto it: database.getVectorOfFilesByUserID(current_user_id)){
         res["id"] = it.first;
         res["name"] = it.second;
         tmp += res;
@@ -478,6 +461,7 @@ RESULT_RESPONSE WebSocketSession::handleLOADrequest(const json &input)
         
         json res;
         res["data"] = ResourceManager::loadAllFromFile(std::to_string(creatorId), std::to_string(file_id));
+        std::string s = res.dump();
         res["file_id"] = file_id;
         res["filename"] = filename;
         res["access_level"] = 0;
@@ -498,13 +482,18 @@ RESULT_RESPONSE WebSocketSession::handleDELETErequest(const json& input)
     uint32_t file_id        = input["file_id"];
     ACTION_RESULT result = database.checkExistanceAndPermission(file_id, current_user_id); 
     if(result != PERMISSION_DENIED){
+        uint32_t d = database.getFileCreatorId(file_id);
         result = database.deleteFile(file_id, current_user_id, result);
+        if(database.getAllUsersOfFile(file_id).size() == 0){
+            ResourceManager::removeFile(std::to_string(d), std::to_string(file_id));
+        }
          json dummy;
         dummy["signal"] = 'y';
         FileWatcher::instance().notifyChanged(file_id, dummy, session_id);
     }
     json res;
     res["msg"] = "deleted";
+    res["file_id"] = file_id;
     return {result, res};
 }
 

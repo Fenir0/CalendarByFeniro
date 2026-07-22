@@ -2,6 +2,7 @@
 #define POSTGRESQL_H
 
 #include <iostream>
+#include <mutex>
 #include <pqxx/pqxx>
 
 enum ACTION_RESULT{
@@ -59,6 +60,7 @@ class PostgresqlWorker{
 
     private:
     pqxx::connection connection;
+    std::mutex db_mutex_; 
 
 };
 

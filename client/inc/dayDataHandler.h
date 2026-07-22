@@ -31,9 +31,9 @@ public:
 
     Q_INVOKABLE bool isDaySaved(quint32 y_m_d);
 
-    void saveCurrentStateIntoFile(const std::string& filename);
-    void loadCurrentStateFromFile(const std::string& filename);
-
+    Q_INVOKABLE json setEmptyJSON();    
+    Q_INVOKABLE json getEmptyJSON();
+    
     Q_INVOKABLE json getDataMapAsJSON();
     void             updateDataMapFromJSON(const json& data);
     void             setDataMapFromJSON(const json& data);

@@ -45,6 +45,7 @@ Window{
             border.color: "black"
             anchors.horizontalCenter: parent.horizontalCenter
             TextEdit{
+                leftPadding: 5
                 id: dayEdit_EditText_content
                 text: editContent
                 selectByMouse: true

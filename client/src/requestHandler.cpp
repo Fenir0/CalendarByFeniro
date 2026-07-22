@@ -69,6 +69,7 @@ void RequestHandler::login(const QString &username, const QString &pwd, QJSValue
         }, Qt::QueuedConnection);
     });
 }
+
 Q_INVOKABLE void RequestHandler::signup(const QString &username, const QString &pwd, QJSValue callback)
 {
     json request;
@@ -104,6 +105,7 @@ Q_INVOKABLE void RequestHandler::signup(const QString &username, const QString &
         }, Qt::QueuedConnection);
     });
 }
+
 Q_INVOKABLE void RequestHandler::logout(QJSValue callback)
 {
     json request;
@@ -128,6 +130,7 @@ Q_INVOKABLE void RequestHandler::logout(QJSValue callback)
         }, Qt::QueuedConnection);
     });
 }
+
 Q_INVOKABLE void RequestHandler::rename(const QString filename, quint32 fileId, QJSValue callback)
 {
     json request, tmp;
@@ -139,13 +142,21 @@ Q_INVOKABLE void RequestHandler::rename(const QString filename, quint32 fileId, 
     [this, callback](const json& response){
         QMetaObject::invokeMethod(this, [this, callback, response](){
             ACTION_RESULT result = getActionResultFromString(response["result"]);
+            std::string newname = response.value("name", "");
             switch(result){
             case SUCCESS:
-                std::string newname = response["name"];
                 AppState::instance().setDocumentName(QString::fromStdString(newname));
                 if(callback.isCallable()){
                     QJSValueList args;
                     args << true << "Renamed successully";
+                    QJSValue calresult = callback.call(args);
+                   QString d = calresult.toString();
+                }
+                break;
+            case FILENAME_TAKEN:
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    args << false << "name";
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
                 }
@@ -200,18 +211,22 @@ Q_INVOKABLE void RequestHandler::create(const QString& filename, const json &dat
             switch(result){
             case SUCCESS:
                 if(callback.isCallable()){
+                    AppState::instance().setDocumentName(QString::fromStdString(response["name"]));
                     AppState::instance().setDocumentId(response["file_id"]);
                     AppState::instance().setAccessLevel(response["access_level"]);
                     QJSValueList args;
                     args << true << "Saved successully";
+                    emit userListChanged();
+                    emit documentListChanged();
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
+                    
                 }
                 break;
             case FILENAME_TAKEN:
                 if(callback.isCallable()){
                     QJSValueList args;
-                    args << true << "Document with this name already exists. Overwrite?";
+                    args << false << "name";
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
                 }
@@ -219,7 +234,7 @@ Q_INVOKABLE void RequestHandler::create(const QString& filename, const json &dat
             case FAILURE:
                 if(callback.isCallable()){
                     QJSValueList args;
-                    args << true << "Error";
+                    args << false << "Error";
                     QJSValue calresult = callback.call(args);
                    QString d = calresult.toString();
                 }
@@ -243,6 +258,13 @@ Q_INVOKABLE void RequestHandler::deleteFile(const QString &filename, quint32 fil
             switch(result){
             case SUCCESS:
                 if(callback.isCallable()){
+                    if(response.value("file_id", 0) == AppState::instance().getDocumentId()){
+                        AppState::instance().setDocumentName("");
+                        AppState::instance().setDocumentId(0);
+                        AppState::instance().setAccessLevel(READ);
+                    }
+
+
                     QJSValueList args;
                     emit documentListChanged();
                     args << true << "Removed successully";
@@ -270,7 +292,6 @@ Q_INVOKABLE void RequestHandler::loadList(QJSValue callback)
                     json data = response["data"];
                     std::string cstr = data.dump();
                     QString qstr = QString::fromStdString(cstr);
-                    emit documentListChanged();
                     QJSValueList args;
                     args << true <<  qstr;
                     QJSValue calresult = callback.call(args);
@@ -336,17 +357,17 @@ Q_INVOKABLE void RequestHandler::loadFromServer(quint32 fileId, const QString &f
             case SUCCESS:
 
                 json newData = response["data"];
-                if(!newData.empty()){
+                if(!newData.empty())
                     DayDataHandler::instance().setDataMapFromJSON(newData);
-
-                    if(callback.isCallable()){
-                        QJSValueList args;
-                        args << true << "Loaded successully";
-                        QJSValue calresult = callback.call(args);
-                    QString d = calresult.toString();
-                    }
-                    break;
+                else
+                    DayDataHandler::instance().setEmptyJSON();
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    args << true << "Loaded successully";
+                    QJSValue calresult = callback.call(args);
+                QString d = calresult.toString();
                 }
+                break;
             }
         }, Qt::QueuedConnection);
     });
@@ -372,11 +393,11 @@ Q_INVOKABLE void RequestHandler::share(quint32 file_id, const QString &username,
                     QJSValueList args;
                     if(userDeletion == 't'){
                         args << true << "Excluded successully";
-                        emit peopleListChanged(); 
+                        emit userListChanged(); 
                     }else{
                         args << true << "Shared successully";
                         if(AppState::instance().getDocumentId() == response["file_id"]);
-                            emit peopleListChanged();   
+                            emit userListChanged();   
                     }
                     QJSValue calresult = callback.call(args);
                     QString d = calresult.toString();
@@ -395,7 +416,27 @@ Q_INVOKABLE void RequestHandler::share(quint32 file_id, const QString &username,
     });
 }
 
-Q_INVOKABLE void RequestHandler::loadDocumentList(QJSValue callback)
+Q_INVOKABLE void RequestHandler::unsubscribeFile(QJSValue callback)
 {
-    return Q_INVOKABLE void();
+    json request;
+    request["action"] = "UNSUBSCRIBE";
+    request["file_id"] = AppState::instance().getDocumentId();
+
+
+    WebSocketWorker::instance().sendRequest(request, 
+    [this, callback](const json& response){
+        QMetaObject::invokeMethod(this, [this, callback, response](){
+            ACTION_RESULT result = getActionResultFromString(response["result"]);
+            
+            switch(result){
+            case SUCCESS:
+                if(callback.isCallable()){
+                    QJSValueList args;
+                    QJSValue calresult = callback.call(args);
+                    QString d = calresult.toString();
+                }
+                break;
+            }
+        }, Qt::QueuedConnection);
+    });
 }

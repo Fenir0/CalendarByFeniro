@@ -20,7 +20,7 @@ Rectangle{
         Text{
             Layout.preferredHeight: parent.height
             text: userNameModel
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: 150
             clip:true
             leftPadding: 30
             verticalAlignment: Text.AlignVCenter
@@ -37,16 +37,16 @@ Rectangle{
         }
         ComboBox{
             Layout.preferredHeight: parent.height
-            visible: AppState.accessLevel == 0
+            visible: AppState.accessLevel == 0 && userNameModel != AppState.username
             Layout.alignment: Qt.AlignCenter
             model: ["Editor", "Reader"]
         }
         RoundButton{
             visible: AppState.accessLevel == 0 && userNameModel != AppState.username
-            Layout.alignment: Qt.AlignRight
+            Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
             Layout.preferredWidth: 20
             Layout.preferredHeight: 20
-            anchors.verticalCenter: parent.verticalCenter
+            //anchors.verticalCenter: parent.verticalCenter
             id: documentListModel_RoundButton_Download
             background: Rectangle{
                 radius: 10

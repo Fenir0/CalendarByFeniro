@@ -51,10 +51,10 @@ class RequestHandler: public QObject{
     
     Q_INVOKABLE void share(quint32 file_id, const QString &username, const QString & accesslevel, QJSValue callback);
 
-    Q_INVOKABLE void loadDocumentList(QJSValue callback);
+    Q_INVOKABLE void unsubscribeFile(QJSValue callback);
 
     signals:
-    void peopleListChanged();
+    void userListChanged();
     void documentListChanged();
 
     private:

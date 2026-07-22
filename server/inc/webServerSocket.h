@@ -25,6 +25,7 @@ enum TASK{
     UPDATE, // continuous
     CREATE,  
     SHARE,
+    UNSUBSCRIBE,
 
     RENAME,
     LOAD,  
@@ -66,7 +67,6 @@ private:
     uint32_t current_file_id;
     uint32_t current_user_id;
 
-    std::vector<std::pair<uint32_t, std::string>> userOwnedFiles;
 
     DocumentHandler workspace;
 
@@ -93,6 +93,7 @@ private:
     RESULT_RESPONSE handleCREATErequest(const json& input);
     RESULT_RESPONSE handleUPDATErequest(const json& input);
     RESULT_RESPONSE handleRENAMErequest(const json& input);
+    RESULT_RESPONSE handleUNSUBSCRIBErequest(const json& input);
 // documents overview action
     RESULT_RESPONSE handleSHARErequest(const json& input);
     RESULT_RESPONSE handleLOADLISTrequest(const json& input);

@@ -45,6 +45,7 @@ Window {
         anchors.leftMargin: 10
         id: mainWindow_ComboBox_YearSelect
         width: 70
+        height: 30
         background: Rectangle{
             color: "#dfdf7a"
         }
@@ -81,7 +82,7 @@ Window {
             monthSelection.visible = false
 
             if (WebSocket.isConnected) {
-                var component = Qt.createComponent("LoadMenu.qml")
+                var component = Qt.createComponent("Menu.qml")
 
                 if (component.status === Component.Ready) {
                     var window = component.createObject(null, {})
@@ -96,7 +97,7 @@ Window {
                 }
             }
             else{
-                var component = Qt.createComponent("ServerIpEnter.qml")
+                var component = Qt.createComponent("Connect.qml")
 
                 if (component.status === Component.Ready) {
                     var window = component.createObject(null, {})
@@ -107,7 +108,7 @@ Window {
                     } 
                     
                 } else if (component.status === Component.Error) {
-                    console.error("Error loading ServerIpEnter.qml:", component.errorString())
+                    console.error("Error loading Connect.qml:", component.errorString())
                 }
             }
         }
@@ -142,6 +143,7 @@ Window {
         property string monthName: AppState.visibleMonth
         z: 0
         TableView{
+            interactive: false
             focus: true
             id: mainWindow_TableView_Month
             width: parent.width

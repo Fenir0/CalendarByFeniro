@@ -48,8 +48,6 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
     QHash<int, QByteArray> roleNames() const;
-
-    Q_INVOKABLE int rowWhereLocated(quint32 day) const;
     
 private:
     QVector<QVector<DayItem>> gridData;
