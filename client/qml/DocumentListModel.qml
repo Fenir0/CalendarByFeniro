@@ -30,7 +30,7 @@ Rectangle{
                     color: "transparent"
                     border.color: "black"
                 }
-                icon.source: "../../img/documentLoadButton.png"
+                icon.source: "../img/documentLoadButton.png"
                 icon.color: "transparent"
                 onClicked:{
                     RequestHandler.loadFromServer(documentId, documentName, function(success, response){
@@ -51,7 +51,7 @@ Rectangle{
                     color: "transparent"
                     border.color: "black"
                 }
-                icon.source: "../../img/documentShareButton.png"
+                icon.source: "../img/documentShareButton.png"
                 icon.color: "transparent"
                 onClicked:{
                     var component = Qt.createComponent("../DialogShare.qml")
@@ -81,7 +81,7 @@ Rectangle{
                     color: "transparent"
                     border.color: "black"
                 }
-                icon.source: "../../img/documentTrashButton.png"
+                icon.source: "../img/documentTrashButton.png"
                 icon.color: "transparent"
                 onClicked:{
                     documentListModel_Dialog_ConfirmDeletion.documentNameDialog = documentName

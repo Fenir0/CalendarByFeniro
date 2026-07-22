@@ -39,12 +39,10 @@ CREATE TABLE IF NOT EXISTS public.access_level_classificator
     CONSTRAINT "access_level_id_PK" PRIMARY KEY (access_level_id)
 );
 
--- 1. Drop constraints if they already exist to prevent "constraint already exists" errors
 ALTER TABLE IF EXISTS public.relations DROP CONSTRAINT IF EXISTS "user_id_FK";
 ALTER TABLE IF EXISTS public.relations DROP CONSTRAINT IF EXISTS "document_id_FK";
 ALTER TABLE IF EXISTS public.relations DROP CONSTRAINT IF EXISTS "access_level_id_FK";
 
--- 2. Recreate the constraints
 ALTER TABLE IF EXISTS public.relations
     ADD CONSTRAINT "user_id_FK" FOREIGN KEY (user_id)
     REFERENCES public.users (user_id) MATCH SIMPLE
@@ -66,7 +64,6 @@ ALTER TABLE IF EXISTS public.relations
     ON DELETE NO ACTION
     NOT VALID;
 
--- 3. Insert initial classification values, ignoring them if they already exist
 INSERT INTO access_level_classificator (access_level_id, access_level) VALUES 
 	 (0, 'CREATOR'),
 	 (1, 'EDIT'),
@@ -77,7 +74,7 @@ END;
 )";
 
 PostgresqlWorker::PostgresqlWorker():
-connection("user=postgres password=admin host=localhost port=5432 dbname=practice target_session_attrs=read-write"){
+connection("user=postgres password=admin host=localhost port=5432 dbname=calendarbyfeniro target_session_attrs=read-write"){
     // pqxx::work w(connection);
     // pqxx::result r = w.exec(init);
     // w.commit();
@@ -170,7 +167,7 @@ std::string PostgresqlWorker::getUsername(uint32_t id)
     return r[0][0].c_str();
 }
 
-std::vector<uint32_t> PostgresqlWorker::getOtherListenersOfFile(u_int32_t file_id)
+std::vector<uint32_t> PostgresqlWorker::getOtherListenersOfFile(uint32_t file_id)
 {
     std::lock_guard<std::mutex> lock(db_mutex_);
     std::vector<uint32_t> res;

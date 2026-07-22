@@ -6,8 +6,9 @@
 int main(){
     try {
         asio::io_context ioc;
-        tcp::endpoint    endpoint(tcp::v4(), 9002);
-        WebSocketServer  server(ioc, endpoint);
+        
+        tcp::endpoint endpoint_v6(tcp::v6(), 9002);
+        WebSocketServer server_v6(ioc, endpoint_v6);
         ioc.run();
     } 
     catch (std::exception const& e) {

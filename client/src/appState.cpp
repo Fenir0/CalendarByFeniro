@@ -144,4 +144,5 @@ Q_INVOKABLE uint32_t AppState::getWeekDay(quint32 day) const
     uint32_t d_month = day / 100 % 100;
     uint32_t d_day = day % 100;
     uint32_t dayOfWeek = QDate(d_year, d_month, d_day).dayOfWeek();
+    return 0;
 }

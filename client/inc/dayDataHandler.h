@@ -31,7 +31,7 @@ public:
 
     Q_INVOKABLE bool isDaySaved(quint32 y_m_d);
 
-    Q_INVOKABLE json setEmptyJSON();    
+    Q_INVOKABLE void setEmptyJSON();    
     Q_INVOKABLE json getEmptyJSON();
     
     Q_INVOKABLE json getDataMapAsJSON();

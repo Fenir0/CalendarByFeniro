@@ -168,14 +168,14 @@ Window {
 
                 itemImageSource: {
                     if (y_m_d == AppState.highlightedDay) {
-                        return "../../img/monthBackgroundChosen.png"
+                        return "../img/monthBackgroundChosen.png"
                     } else if (model.isCurrent) {
                         if(DayDataHandler.isDaySaved(y_m_d)){
-                            return "../../img/monthBackgroundSaved.png"
+                            return "../img/monthBackgroundSaved.png"
                         }
-                        return "../../img/monthBackgroundCurrent.png"
+                        return "../img/monthBackgroundCurrent.png"
                     } else {
-                        return "../../img/monthBackground.png"
+                        return "../img/monthBackground.png"
                     }
                 }
                 

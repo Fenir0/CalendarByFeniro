@@ -53,7 +53,7 @@ Rectangle{
                 color: "transparent"
                 border.color: "black"
             }
-            icon.source: "../../img/documentTrashButton.png"
+            icon.source: "../img/documentTrashButton.png"
             icon.color: "transparent"
             onClicked:{
                 RequestHandler.share(AppState.documentId, userNameModel, "exclude", function(success, msg){

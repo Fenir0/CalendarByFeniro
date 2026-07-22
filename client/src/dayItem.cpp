@@ -51,9 +51,9 @@ Q_INVOKABLE void DayItemModel::loadMonth(int year, int month)
         for(int col = 0; col < 7; col++){
             int ind = row*7 + col;
             int indexInGrid = row * 7 + col;
-            u_int32_t d_day = 0;
-            u_int32_t d_month = month;
-            u_int32_t d_year = year;
+            uint32_t d_day = 0;
+            uint32_t d_month = month;
+            uint32_t d_year = year;
             bool isCurrent = true;
 
             if (indexInGrid < startDayOfWeek - 1) {
@@ -73,7 +73,7 @@ Q_INVOKABLE void DayItemModel::loadMonth(int year, int month)
                 d_year = nextMonthDate.year();
                 isCurrent = false;
             }
-            u_int32_t ymd = d_year * 10000 + d_month * 100 + d_day;
+            uint32_t ymd = d_year * 10000 + d_month * 100 + d_day;
             QString content = DayDataHandler::instance().getContentByYMD(ymd);
             if(content.size() > 0){
                 int a = 133;

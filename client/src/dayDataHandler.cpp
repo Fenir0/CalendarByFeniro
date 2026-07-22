@@ -40,7 +40,7 @@ bool DayDataHandler::isDaySaved(quint32 y_m_d)
     return currentDataMap.find(y_m_d) != currentDataMap.end() && currentDataMap[y_m_d].length() > 0 ;
 }
 
-Q_INVOKABLE json DayDataHandler::setEmptyJSON()
+Q_INVOKABLE void DayDataHandler::setEmptyJSON()
 {
     currentDataMap.clear();
     emit newDataSet();

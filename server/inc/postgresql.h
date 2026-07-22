@@ -49,7 +49,7 @@ class PostgresqlWorker{
     std::string               getUsername(uint32_t id);
 
     std::vector<std::pair<uint32_t, std::string>> getVectorOfFilesByUserID(uint32_t user_id);
-    std::vector<uint32_t> getOtherListenersOfFile(u_int32_t file_id);
+    std::vector<uint32_t> getOtherListenersOfFile(uint32_t file_id);
     std::vector<std::pair<uint32_t, std::string>> getAllUsersOfFile(uint32_t file_id);
     uint32_t getFileCreatorId(uint32_t file_id);
 
