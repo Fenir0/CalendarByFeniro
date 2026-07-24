@@ -107,7 +107,10 @@ void AppState::setUserId(uint32_t id){user_id = id;emit userChanged();}
 
 QString AppState::getDocumentName() const{return documentName;}
 
-void AppState::setDocumentName(QString newDocumentName){documentName = newDocumentName;emit userChanged();}
+void AppState::setDocumentName(QString newDocumentName){
+    documentName = newDocumentName; 
+    emit parameterChanged();
+}
 
 uint32_t AppState::getDocumentId() const{return document_id;}
 

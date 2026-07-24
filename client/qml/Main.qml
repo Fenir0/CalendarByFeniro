@@ -121,6 +121,7 @@ Window {
         function onParameterChanged() {
             console.log("Reloading: ", AppState.visibleYear, AppState.visibleMonth)
             mainWindow_DayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
+            mainWindow_TableView_Month.forceLayout()
         }
     }
     Connections {
@@ -132,6 +133,7 @@ Window {
     }
     Component.onCompleted: {
         mainWindow_DayItemModel.loadMonth(AppState.visibleYear, AppState.visibleMonth)
+        
     }
 
     Column{

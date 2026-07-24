@@ -346,6 +346,8 @@ RESULT_RESPONSE WebSocketSession::handleUNSUBSCRIBErequest(const json &input)
     if(current_file_id != 0)
         FileWatcher::instance().unsubscribe(current_file_id, session_id);
     json res;
+    current_file_id = 0;
+    current_file = "";
     return {SUCCESS, res};
 }
 

@@ -36,10 +36,24 @@ Rectangle{
             visible: AppState.accessLevel != 0
         }
         ComboBox{
+            id: userlistmode_combobox_level
             Layout.preferredHeight: parent.height
             visible: AppState.accessLevel == 0 && userNameModel != AppState.username
             Layout.alignment: Qt.AlignCenter
             model: ["Editor", "Reader"]
+            currentIndex: userAccessLevelModel - 1
+            onActivated: {
+                RequestHandler.share(AppState.documentId, userNameModel, userlistmode_combobox_level.currentText, function(success, msg){
+                    if(success){
+                        console.log("changed successfully")
+                        dialogShare_Window.close()
+                    }else {
+                        if(msg == "Nouser"){
+                            dialogShare_SeqAnim_Username.start()
+                        }
+                    }
+                })
+            }
         }
         RoundButton{
             visible: AppState.accessLevel == 0 && userNameModel != AppState.username

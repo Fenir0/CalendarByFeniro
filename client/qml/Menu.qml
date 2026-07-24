@@ -482,6 +482,14 @@ Column{
             onClicked:{
                 AppState.documentId = 0
                 AppState.documentName = ""
+                RequestHandler.unsubscribeFile(function(success, msg){
+                    if(success){
+                        console.log("unsubbed")
+                        menu_Button_LoadDocs.clicked();
+                    }else{
+                        
+                    }
+                })
             }
         }
     }

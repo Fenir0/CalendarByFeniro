@@ -430,8 +430,12 @@ Q_INVOKABLE void RequestHandler::unsubscribeFile(QJSValue callback)
             
             switch(result){
             case SUCCESS:
+                AppState::instance().setDocumentId(0);
+                AppState::instance().setDocumentName("");
+                DayDataHandler::instance().setEmptyJSON();
                 if(callback.isCallable()){
                     QJSValueList args;
+                    args << true << "Unsubbed successully";
                     QJSValue calresult = callback.call(args);
                     QString d = calresult.toString();
                 }

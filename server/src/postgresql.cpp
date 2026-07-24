@@ -106,19 +106,13 @@ ACTION_RESULT PostgresqlWorker::signUserPwd(std::string username, std::string pa
     std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p (username, password);
-    try{
-        pqxx::result r = w.exec("INSERT INTO users (user_nickname, user_password) VALUES ($1, $2)", p);
-        w.commit();    
-    }
-    catch(std::exception e){
-        return USERNAME_TAKEN;
-    }
+    pqxx::result r = w.exec("INSERT INTO users (user_nickname, user_password) VALUES ($1, $2)", p);
+    w.commit();    
     return SUCCESS;
 }
 
 ACTION_RESULT PostgresqlWorker::checkExistanceAndPermission(uint32_t file_id, uint32_t user_id)
 {
-    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w_ex(connection);
     pqxx::params p (user_id, file_id);
     pqxx::result r = w_ex.exec("SELECT access_level_id FROM relations WHERE user_id = $1 AND document_id = $2", p);
@@ -134,7 +128,6 @@ ACTION_RESULT PostgresqlWorker::checkExistanceAndPermission(uint32_t file_id, ui
 
 std::vector<std::pair<uint32_t, std::string>> PostgresqlWorker::getVectorOfFilesByUserID(uint32_t user_id)
 {
-    std::lock_guard<std::mutex> lock(db_mutex_);
     std::vector<std::pair<uint32_t, std::string>> res;
     pqxx::work w(connection);
     pqxx::params p(user_id);
@@ -149,7 +142,6 @@ WHERE relations.document_id = documents.document_id AND relations.user_id = $1",
 }
 uint32_t PostgresqlWorker::getUserId(std::string username)
 {
-    std::lock_guard<std::mutex> lock(db_mutex_);
     pqxx::work w(connection);
     pqxx::params p(username);
     pqxx::result r = w.exec("SELECT user_id FROM users WHERE user_nickname = $1", p);

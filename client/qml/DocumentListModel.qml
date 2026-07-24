@@ -54,7 +54,7 @@ Rectangle{
                 icon.source: "../img/documentShareButton.png"
                 icon.color: "transparent"
                 onClicked:{
-                    var component = Qt.createComponent("../DialogShare.qml")
+                    var component = Qt.createComponent("DialogShare.qml")
 
                     if (component.status === Component.Ready) {
                         var window = component.createObject(null, {

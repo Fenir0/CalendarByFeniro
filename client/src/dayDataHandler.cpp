@@ -43,6 +43,7 @@ bool DayDataHandler::isDaySaved(quint32 y_m_d)
 Q_INVOKABLE void DayDataHandler::setEmptyJSON()
 {
     currentDataMap.clear();
+    AppState::instance().setDocumentName("");
     emit newDataSet();
 }
 
